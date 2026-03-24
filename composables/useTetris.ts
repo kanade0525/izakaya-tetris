@@ -5,6 +5,23 @@ export interface TetrisPiece {
   y: number
 }
 
+export type IzakayaPhase =
+  | 'idle'
+  | 'confirm'
+  | 'exclusion'
+  | 'drawing'
+  | 'countdown'
+  | 'dropping'
+  | 'placed'
+  | 'wildcard'
+  | 'miss'
+  | 'won'
+
+export type DrawnResult =
+  | { type: 'piece'; pieceIndex: number }
+  | { type: 'wildcard' }
+  | { type: 'miss' }
+
 export interface GameState {
   board: number[][]
   currentPiece: TetrisPiece | null
@@ -16,10 +33,16 @@ export interface GameState {
   paused: boolean
   started: boolean
   clearingRows: number[]
+  mode: 'classic' | 'izakaya'
+  stocks: number
+  izakayaPhase: IzakayaPhase
+  excludedPieces: number[]
+  drawnResult: DrawnResult | null
 }
 
 const BOARD_WIDTH = 10
 const BOARD_HEIGHT = 20
+const MAX_BOARD_HEIGHT = 40
 
 const PIECES = [
   // I
@@ -38,23 +61,29 @@ const PIECES = [
   { shape: [[0, 0, 1], [1, 1, 1]], color: '#f0a000' }
 ]
 
-export const useTetris = () => {
-  const gameState = ref<GameState>({
-    board: [],
-    currentPiece: null,
-    nextPiece: null,
-    score: 0,
-    lines: 0,
-    level: 1,
-    gameOver: false,
-    paused: false,
-    started: false,
-    clearingRows: []
-  })
+const gameState = ref<GameState>({
+  board: [],
+  currentPiece: null,
+  nextPiece: null,
+  score: 0,
+  lines: 0,
+  level: 1,
+  gameOver: false,
+  paused: false,
+  started: false,
+  clearingRows: [],
+  mode: 'classic',
+  stocks: 0,
+  izakayaPhase: 'idle',
+  excludedPieces: [],
+  drawnResult: null
+})
 
-  const initBoard = () => {
+export const useTetris = () => {
+
+  const initBoard = (height: number = BOARD_HEIGHT) => {
     const board = []
-    for (let y = 0; y < BOARD_HEIGHT; y++) {
+    for (let y = 0; y < height; y++) {
       board[y] = new Array(BOARD_WIDTH).fill(0)
     }
     return board
@@ -78,7 +107,7 @@ export const useTetris = () => {
           const newX = piece.x + x + offsetX
           const newY = piece.y + y + offsetY
 
-          if (newX < 0 || newX >= BOARD_WIDTH || newY >= BOARD_HEIGHT) {
+          if (newX < 0 || newX >= BOARD_WIDTH || newY >= board.length) {
             return false
           }
 
@@ -115,7 +144,7 @@ export const useTetris = () => {
 
   const findFullRows = (board: number[][]): number[] => {
     const rows: number[] = []
-    for (let y = BOARD_HEIGHT - 1; y >= 0; y--) {
+    for (let y = board.length - 1; y >= 0; y--) {
       if (board[y].every(cell => cell !== 0)) {
         rows.push(y)
       }
@@ -138,6 +167,11 @@ export const useTetris = () => {
     gameState.value.score += rows.length * 100 * gameState.value.level
     gameState.value.level = Math.floor(gameState.value.lines / 10) + 1
     gameState.value.clearingRows = []
+
+    if (gameState.value.mode === 'izakaya') {
+      // Don't auto-spawn in izakaya mode
+      return
+    }
 
     gameState.value.currentPiece = gameState.value.nextPiece
     gameState.value.nextPiece = createPiece()
@@ -166,6 +200,9 @@ export const useTetris = () => {
       if (fullRows.length > 0) {
         gameState.value.clearingRows = fullRows
         gameState.value.currentPiece = null
+      } else if (gameState.value.mode === 'izakaya') {
+        // In izakaya mode, don't auto-spawn. Let the composable handle it.
+        gameState.value.currentPiece = null
       } else {
         gameState.value.currentPiece = gameState.value.nextPiece
         gameState.value.nextPiece = createPiece()
@@ -182,13 +219,27 @@ export const useTetris = () => {
   const rotate = () => {
     if (!gameState.value.currentPiece || gameState.value.gameOver || gameState.value.paused) return
 
-    const rotated = rotatePiece(gameState.value.currentPiece)
-    const originalShape = gameState.value.currentPiece.shape
-    gameState.value.currentPiece.shape = rotated
+    const piece = gameState.value.currentPiece
+    const rotated = rotatePiece(piece)
+    const originalShape = piece.shape
+    piece.shape = rotated
 
-    if (!isValidMove(gameState.value.currentPiece, gameState.value.board)) {
-      gameState.value.currentPiece.shape = originalShape
+    // Wall kick: try shifting left/right and up (including I-piece at wall edge)
+    const kicks = [
+      [0, 0], [-1, 0], [1, 0], [-2, 0], [2, 0], [-3, 0], [3, 0],
+      [0, -1], [-1, -1], [1, -1], [-2, -1], [2, -1], [-3, -1],
+      [0, -2], [-1, -2], [1, -2],
+    ]
+    for (const [dx, dy] of kicks) {
+      if (isValidMove(piece, gameState.value.board, dx, dy)) {
+        piece.x += dx
+        piece.y += dy
+        return
+      }
     }
+
+    // No valid position found, revert
+    piece.shape = originalShape
   }
 
   const hardDrop = () => {
@@ -209,6 +260,11 @@ export const useTetris = () => {
     gameState.value.gameOver = false
     gameState.value.paused = false
     gameState.value.started = true
+    gameState.value.mode = 'classic'
+    gameState.value.stocks = 0
+    gameState.value.izakayaPhase = 'idle'
+    gameState.value.excludedPieces = []
+    gameState.value.drawnResult = null
   }
 
   const togglePause = () => {
@@ -226,8 +282,13 @@ export const useTetris = () => {
     togglePause,
     isValidMove,
     commitClear,
+    createPiece,
+    initBoard,
+    mergePiece,
+    findFullRows,
     BOARD_WIDTH,
     BOARD_HEIGHT,
+    MAX_BOARD_HEIGHT,
     PIECES
   }
 }
