@@ -2,9 +2,12 @@ export default defineNuxtConfig({
   devtools: { enabled: false },
   ssr: false,
   css: ['~/assets/css/main.css'],
+  nitro: {
+    preset: 'static'
+  },
   app: {
     head: {
-      title: 'Izakaya Tetris',
+      title: '居酒屋テトリス',
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no' },
