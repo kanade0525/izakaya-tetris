@@ -21,7 +21,6 @@
             <button class="icon-btn small" @click="izakaya.addStock(1)">
               <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
             </button>
-            <span class="izk-stats">落とした数 {{ gameState.droppedCount }} / 使った数 {{ gameState.stocksUsed }}</span>
           </div>
           <div class="izk-header-actions">
             <button class="icon-btn small" :disabled="!izakaya.canUndo()" @click="izakaya.undo()">
@@ -65,6 +64,10 @@
         <div v-else-if="showMenu" class="title-overlay" @click.self="handleResume" @touchstart.self.prevent="handleResume">
           <div class="menu-box" v-if="!confirmAction">
             <div class="menu-title">中断中</div>
+            <div v-if="gameState.mode === 'izakaya'" class="menu-stats">
+              <div class="menu-stats-row">落としたブロック<span>{{ gameState.droppedCount }}</span></div>
+              <div class="menu-stats-row">飲み食いした数<span>{{ gameState.stocksUsed }}</span></div>
+            </div>
             <button class="menu-item" @click="handleResume">再開</button>
             <button class="menu-item" @click="confirmAction = 'restart'">最初から</button>
             <button class="menu-item menu-item-quit" @click="handleQuit">やめる</button>
