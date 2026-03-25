@@ -66,7 +66,7 @@
             <div class="menu-title">中断中</div>
             <div v-if="gameState.mode === 'izakaya'" class="menu-stats">
               <div class="menu-stats-row">落としたブロック<span>{{ gameState.droppedCount }}</span></div>
-              <div class="menu-stats-row">飲み食いした数<span>{{ gameState.stocksUsed }}</span></div>
+              <div class="menu-stats-row">注文品数<span>{{ gameState.stocksUsed }}</span></div>
             </div>
             <button class="menu-item" @click="handleResume">再開</button>
             <button class="menu-item" @click="confirmAction = 'restart'">最初から</button>
