@@ -21,7 +21,7 @@
             <button class="icon-btn small" @click="izakaya.addStock(1)">
               <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
             </button>
-            <span class="izk-stats">{{ gameState.droppedCount }}投 / {{ gameState.stocksUsed }}消費</span>
+            <span class="izk-stats">落とした数 {{ gameState.droppedCount }} / 使った数 {{ gameState.stocksUsed }}</span>
           </div>
           <div class="izk-header-actions">
             <button class="icon-btn small" :disabled="!izakaya.canUndo()" @click="izakaya.undo()">
