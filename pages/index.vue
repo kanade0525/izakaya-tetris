@@ -395,17 +395,26 @@ watch(() => gameState.value.izakayaPhase, (phase) => {
   }
 })
 
+// Warn before leaving during izakaya mode
+const beforeUnload = (e: BeforeUnloadEvent) => {
+  if (gameState.value.mode === 'izakaya' && gameState.value.started) {
+    e.preventDefault()
+  }
+}
+
 onMounted(() => {
   try { hasSave.value = !!localStorage.getItem('izakaya-tetris-save') } catch {}
   resizeCanvas()
   animFrameId = requestAnimationFrame(gameLoop)
   if (wrapperRef.value) { resizeObserver = new ResizeObserver(() => resizeCanvas()); resizeObserver.observe(wrapperRef.value) }
+  window.addEventListener('beforeunload', beforeUnload)
 })
 onUnmounted(() => {
   cancelAnimationFrame(animFrameId)
   if (resizeObserver) { resizeObserver.disconnect(); resizeObserver = null }
   if (countdownInterval) clearInterval(countdownInterval)
   if (rollingInterval) clearInterval(rollingInterval)
+  window.removeEventListener('beforeunload', beforeUnload)
 })
 onMounted(() => {
   const kp = (e: KeyboardEvent) => {
