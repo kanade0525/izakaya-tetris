@@ -48,7 +48,7 @@
 
         <!-- Overlays -->
         <div v-if="!gameState.started" class="title-overlay">
-          <div class="title-text">居酒屋<br>TETRIS</div>
+          <div class="title-text">居酒屋<br>ブロック落とし</div>
           <div class="mode-buttons">
             <button class="mode-btn" @click="handleStartClassic" @touchstart.prevent="handleStartClassic">まずゲームオーバーになるまで遊ぶ</button>
             <button class="mode-btn mode-btn-izakaya" @click="handleStartIzakaya" @touchstart.prevent="handleStartIzakaya">ゲームオーバー状態から開始する</button>
@@ -220,7 +220,7 @@
           <div class="help-section">
             <div class="help-heading">ゲームの流れ</div>
             <ol class="help-list">
-              <li>まず普通のテトリスをプレイしてゲームオーバーにする（またはランダム盤面で開始）</li>
+              <li>まず普通にプレイしてゲームオーバーにする（またはランダム盤面で開始）</li>
               <li>居酒屋で何か注文するたびに「+」ボタンでストックを貯める</li>
               <li>ストックを消費して「ブロックを落とす」を実行</li>
               <li>ランダムでブロックが決まり、落として配置する</li>
@@ -439,7 +439,7 @@ const takeScreenshot = () => {
   renderBoard()
 
   const link = document.createElement('a')
-  link.download = `izakaya-tetris-turn${gameState.value.droppedCount}.png`
+  link.download = `izakaya-block-turn${gameState.value.droppedCount}.png`
   link.href = canvas.toDataURL('image/png')
   link.click()
 }
@@ -465,7 +465,7 @@ const handleQuit = () => {
   showMenu.value = false; confirmAction.value = null
   gameState.value.started = false; gameState.value.paused = false; gameState.value.gameOver = false
   gameState.value.currentPiece = null; gameState.value.mode = 'classic'; gameState.value.izakayaPhase = 'idle'
-  try { hasSave.value = !!localStorage.getItem('izakaya-tetris-save') } catch {}
+  try { hasSave.value = !!localStorage.getItem('izakaya-block-save') } catch {}
 }
 
 
@@ -510,7 +510,7 @@ const preventDoubleTapZoom = (e: TouchEvent) => {
 }
 
 onMounted(() => {
-  try { hasSave.value = !!localStorage.getItem('izakaya-tetris-save') } catch {}
+  try { hasSave.value = !!localStorage.getItem('izakaya-block-save') } catch {}
   resizeCanvas()
   animFrameId = requestAnimationFrame(gameLoop)
   if (wrapperRef.value) { resizeObserver = new ResizeObserver(() => resizeCanvas()); resizeObserver.observe(wrapperRef.value) }

@@ -6,7 +6,7 @@ interface HistoryEntry {
   stocks: number
 }
 
-const STORAGE_KEY = 'izakaya-tetris-save'
+const STORAGE_KEY = 'izakaya-block-save'
 
 export const useIzakayaMode = () => {
   const {

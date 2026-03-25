@@ -1,7 +1,7 @@
 {
-  "name": "izakaya-tetris",
+  "name": "izakaya-block",
   "version": "1.0.0",
-  "description": "居酒屋で飲み食いしながら遊ぶターン制テトリスパズル",
+  "description": "居酒屋で飲み食いしながら遊ぶターン制ブロックパズル",
   "author": "kanade0525",
   "license": "MIT",
   "homepage": "https://github.com/kanade0525/izakaya-tetris",

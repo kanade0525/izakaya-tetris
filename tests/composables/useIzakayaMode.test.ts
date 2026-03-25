@@ -69,7 +69,7 @@ describe('useIzakayaMode', () => {
     it('addStock saves to localStorage', () => {
       gs.value.stocks = 0
       izk.addStock()
-      const saved = JSON.parse(localStorage.getItem('izakaya-tetris-save')!)
+      const saved = JSON.parse(localStorage.getItem('izakaya-block-save')!)
       expect(saved.stocks).toBe(1)
     })
   })
@@ -436,7 +436,7 @@ describe('useIzakayaMode', () => {
     it('saveToStorage stores data as JSON', () => {
       gs.value.stocks = 3
       izk.saveToStorage()
-      const saved = JSON.parse(localStorage.getItem('izakaya-tetris-save')!)
+      const saved = JSON.parse(localStorage.getItem('izakaya-block-save')!)
       expect(saved.stocks).toBe(3)
       expect(saved.board).toBeDefined()
     })
@@ -444,7 +444,7 @@ describe('useIzakayaMode', () => {
     it('saveToStorage does nothing when mode is not izakaya', () => {
       gs.value.mode = 'classic'
       izk.saveToStorage()
-      expect(localStorage.getItem('izakaya-tetris-save')).toBeNull()
+      expect(localStorage.getItem('izakaya-block-save')).toBeNull()
     })
 
     it('loadFromStorage restores state', () => {
@@ -468,27 +468,27 @@ describe('useIzakayaMode', () => {
     })
 
     it('loadFromStorage returns false when data is malformed', () => {
-      localStorage.setItem('izakaya-tetris-save', JSON.stringify({ foo: 'bar' }))
+      localStorage.setItem('izakaya-block-save', JSON.stringify({ foo: 'bar' }))
       expect(izk.loadFromStorage()).toBe(false)
     })
 
     it('loadFromStorage returns false when JSON is invalid', () => {
-      localStorage.setItem('izakaya-tetris-save', 'not json{{{')
+      localStorage.setItem('izakaya-block-save', 'not json{{{')
       expect(izk.loadFromStorage()).toBe(false)
     })
 
     it('loadFromStorage defaults stocks to 0 when missing', () => {
       const board = makeBoard(25)
-      localStorage.setItem('izakaya-tetris-save', JSON.stringify({ board }))
+      localStorage.setItem('izakaya-block-save', JSON.stringify({ board }))
       izk.loadFromStorage()
       expect(gs.value.stocks).toBe(0)
     })
 
     it('clearStorage removes the key', () => {
       izk.saveToStorage()
-      expect(localStorage.getItem('izakaya-tetris-save')).not.toBeNull()
+      expect(localStorage.getItem('izakaya-block-save')).not.toBeNull()
       izk.clearStorage()
-      expect(localStorage.getItem('izakaya-tetris-save')).toBeNull()
+      expect(localStorage.getItem('izakaya-block-save')).toBeNull()
     })
   })
 
