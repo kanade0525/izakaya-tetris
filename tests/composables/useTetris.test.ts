@@ -484,6 +484,29 @@ describe('useTetris', () => {
       expect(tetris.gameState.value.currentPiece).not.toBeNull()
     })
 
+    it('in classic mode sets gameOver after clear if next piece cannot fit', () => {
+      tetris.gameState.value.mode = 'classic'
+      // Board with bottom row full (will be cleared), but top rows blocked
+      const board = tetris.initBoard()
+      // Fill top 4 rows with partial blocks (not full, so they won't clear)
+      for (let y = 0; y < 4; y++) {
+        for (let x = 0; x < 10; x++) board[y][x] = 1
+        board[y][9] = 0 // keep one empty so row isn't "full"
+      }
+      // Fill bottom row completely (this will be cleared)
+      board[19] = new Array(10).fill(1)
+      tetris.gameState.value.board = board
+      tetris.gameState.value.clearingRows = [19]
+      // nextPiece that will collide with top blocked rows after spawn
+      tetris.gameState.value.nextPiece = tetris.createPiece(1) // O-piece at y=0, x=4
+
+      tetris.commitClear()
+      // After clearing row 19, top rows shift down by 1. Row 0 becomes empty, rows 1-4 have blocks.
+      // O-piece spawns at y=0, x=4. board[0] is now empty but board[1][4]=1.
+      // O-piece occupies (0,4),(0,5),(1,4),(1,5) -> board[1][4]=1 conflicts
+      expect(tetris.gameState.value.gameOver).toBe(true)
+    })
+
     it('does nothing when clearingRows is empty', () => {
       tetris.gameState.value.clearingRows = []
       const scoresBefore = tetris.gameState.value.score
