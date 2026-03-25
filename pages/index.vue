@@ -29,6 +29,9 @@
             <button class="icon-btn small" :disabled="!izakaya.canRedo()" @click="izakaya.redo()">
               <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M11.5 8c2.65 0 5.05 1.04 6.83 2.73L21 8v8h-8l2.68-2.68A7.46 7.46 0 0 0 11.5 11c-3.04 0-5.62 1.82-6.78 4.42L2.5 14.5A9.96 9.96 0 0 1 11.5 8z"/></svg>
             </button>
+            <button class="icon-btn small" @click="takeScreenshot" title="スクリーンショット">
+              <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M21 6h-3.17L16 4h-8l-1.83 2H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-9 11c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.65 0-3 1.35-3 3s1.35 3 3 3 3-1.35 3-3-1.35-3-3-3z"/></svg>
+            </button>
             <button class="icon-btn small" @click="openMenu">
               <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
             </button>
@@ -425,6 +428,20 @@ const handleClear = (d: number, izk: boolean) => {
   if (!isClearing) { isClearing = true; clearTimer = 0 }
   clearTimer += d; renderWithFlash(clearTimer)
   if (clearTimer >= 400) { isClearing = false; shakeOffset.x = 0; shakeOffset.y = 0; commitClear(); dropTimer = 0; izakayaDropTimer = 0; if (izk) izakaya.onIzakayaClearDone() }
+}
+
+// --- Screenshot ---
+const takeScreenshot = () => {
+  const canvas = canvasRef.value
+  if (!canvas) return
+  // Re-render without shake
+  shakeOffset.x = 0; shakeOffset.y = 0
+  renderBoard()
+
+  const link = document.createElement('a')
+  link.download = `izakaya-tetris-${Date.now()}.png`
+  link.href = canvas.toDataURL('image/png')
+  link.click()
 }
 
 // --- Handlers ---
