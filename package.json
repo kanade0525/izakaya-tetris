@@ -1,5 +1,10 @@
 {
   "name": "izakaya-tetris",
+  "version": "1.0.0",
+  "description": "居酒屋で飲み食いしながら遊ぶターン制テトリスパズル",
+  "author": "kanade0525",
+  "license": "MIT",
+  "homepage": "https://github.com/kanade0525/izakaya-tetris",
   "private": true,
   "type": "module",
   "scripts": {
@@ -11,8 +16,7 @@
   },
   "dependencies": {
     "nuxt": "^3.11.0",
-    "vue": "latest",
-    "phaser": "^3.70.0"
+    "vue": "latest"
   },
   "devDependencies": {
     "@nuxt/devtools": "latest",
