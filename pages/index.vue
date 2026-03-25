@@ -407,12 +407,21 @@ const beforeUnload = (e: BeforeUnloadEvent) => {
   }
 }
 
+// Prevent pinch zoom and double-tap zoom
+const preventZoom = (e: TouchEvent) => {
+  if (e.touches.length > 1) e.preventDefault()
+}
+const preventGestureZoom = (e: Event) => { e.preventDefault() }
+
 onMounted(() => {
   try { hasSave.value = !!localStorage.getItem('izakaya-tetris-save') } catch {}
   resizeCanvas()
   animFrameId = requestAnimationFrame(gameLoop)
   if (wrapperRef.value) { resizeObserver = new ResizeObserver(() => resizeCanvas()); resizeObserver.observe(wrapperRef.value) }
   window.addEventListener('beforeunload', beforeUnload)
+  document.addEventListener('touchstart', preventZoom, { passive: false })
+  document.addEventListener('gesturestart', preventGestureZoom)
+  document.addEventListener('gesturechange', preventGestureZoom)
 })
 onUnmounted(() => {
   cancelAnimationFrame(animFrameId)
@@ -420,6 +429,9 @@ onUnmounted(() => {
   if (countdownInterval) clearInterval(countdownInterval)
   if (rollingInterval) clearInterval(rollingInterval)
   window.removeEventListener('beforeunload', beforeUnload)
+  document.removeEventListener('touchstart', preventZoom)
+  document.removeEventListener('gesturestart', preventGestureZoom)
+  document.removeEventListener('gesturechange', preventGestureZoom)
 })
 onMounted(() => {
   const kp = (e: KeyboardEvent) => {
