@@ -439,7 +439,7 @@ const takeScreenshot = () => {
   renderBoard()
 
   const link = document.createElement('a')
-  link.download = `izakaya-tetris-${Date.now()}.png`
+  link.download = `izakaya-tetris-turn${gameState.value.droppedCount}.png`
   link.href = canvas.toDataURL('image/png')
   link.click()
 }
