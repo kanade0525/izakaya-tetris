@@ -50,6 +50,7 @@
             <button class="mode-btn" @click="handleStartClassic" @touchstart.prevent="handleStartClassic">まずゲームオーバーになるまで遊ぶ</button>
             <button class="mode-btn mode-btn-izakaya" @click="handleStartIzakaya" @touchstart.prevent="handleStartIzakaya">ゲームオーバー状態から開始する</button>
             <button v-if="hasSave" class="mode-btn mode-btn-resume" @click="handleResumeSave" @touchstart.prevent="handleResumeSave">続きから</button>
+            <button class="mode-btn mode-btn-help" @click="showHelp = true">遊び方</button>
           </div>
         </div>
 
@@ -69,6 +70,7 @@
               <div class="menu-stats-row">注文品数<span>{{ gameState.stocksUsed }}</span></div>
             </div>
             <button class="menu-item" @click="handleResume">再開</button>
+            <button class="menu-item" @click="showHelp = true; showMenu = false">遊び方</button>
             <button class="menu-item" @click="confirmAction = 'restart'">最初から</button>
             <button class="menu-item menu-item-quit" @click="handleQuit">やめる</button>
           </div>
@@ -204,6 +206,72 @@
       <button class="izk-drop-btn" :disabled="!izakaya.canDrop()" @click="izakaya.requestDrop()">
         ブロックを落とす
       </button>
+    </div>
+
+    <!-- Help (full screen overlay, outside game-main for proper scrolling) -->
+    <div v-if="showHelp" class="help-overlay">
+      <div class="help-box">
+        <div class="help-scroll">
+          <div class="help-title">遊び方</div>
+
+          <div class="help-section">
+            <div class="help-heading">ゲームの流れ</div>
+            <ol class="help-list">
+              <li>まず普通のテトリスをプレイしてゲームオーバーにする（またはランダム盤面で開始）</li>
+              <li>居酒屋で何か注文するたびに「+」ボタンでストックを貯める</li>
+              <li>ストックを消費して「ブロックを落とす」を実行</li>
+              <li>ランダムでブロックが決まり、落として配置する</li>
+              <li>一番下の行を消せばクリア!</li>
+            </ol>
+          </div>
+
+          <div class="help-section">
+            <div class="help-heading">ブロックの抽選</div>
+            <p class="help-text">ストックを1つ消費して抽選します。9種類の中からランダムで1つ決まります。</p>
+            <ul class="help-list">
+              <li><b>通常ブロック（7種）</b> --- そのブロックが落ちてきます</li>
+              <li><b>何でもブロック（?）</b> --- 好きなブロックを1つ選べます</li>
+              <li><b>ハズレ（--）</b> --- 何も起きません。ストックだけ消費されます</li>
+            </ul>
+          </div>
+
+          <div class="help-section">
+            <div class="help-heading">落としたくないブロックを選ぶ</div>
+            <p class="help-text">追加でストックを消費して、出てほしくないブロックやハズレを抽選から除外できます。1つ除外するごとに+1ストック消費。</p>
+          </div>
+
+          <div class="help-section">
+            <div class="help-heading">ボタンの説明</div>
+            <dl class="help-dl">
+              <div class="help-dl-row"><dt>+ / −</dt><dd>ストックの増減（注文したら+）</dd></div>
+              <div class="help-dl-row">
+                <dt>
+                  <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M12.5 8c-2.65 0-5.05 1.04-6.83 2.73L3 8v8h8l-2.68-2.68A7.46 7.46 0 0 1 12.5 11c3.04 0 5.62 1.82 6.78 4.42l2.22-.93A9.96 9.96 0 0 0 12.5 8z"/></svg>
+                  /
+                  <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M11.5 8c2.65 0 5.05 1.04 6.83 2.73L21 8v8h-8l2.68-2.68A7.46 7.46 0 0 0 11.5 11c-3.04 0-5.62 1.82-6.78 4.42L2.5 14.5A9.96 9.96 0 0 1 11.5 8z"/></svg>
+                </dt><dd>元に戻す / やり直し</dd></div>
+              <div class="help-dl-row">
+                <dt><svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg></dt>
+                <dd>メニュー</dd>
+              </div>
+            </dl>
+          </div>
+
+          <div class="help-section">
+            <div class="help-heading">操作（ブロック落下中）</div>
+            <dl class="help-dl">
+              <div class="help-dl-row"><dt>← →</dt><dd>左右移動</dd></div>
+              <div class="help-dl-row"><dt>↓</dt><dd>下に移動</dd></div>
+              <div class="help-dl-row">
+                <dt><svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 8 8h-2a6 6 0 1 1-1.76-4.24l-2.12 2.12H20V4l-2.35 2.35z"/></svg></dt>
+                <dd>回転</dd>
+              </div>
+              <div class="help-dl-row"><dt>↓↓</dt><dd>一気に落とす</dd></div>
+            </dl>
+          </div>
+        </div>
+        <button class="mode-btn" @click="showHelp = false">閉じる</button>
+      </div>
     </div>
   </div>
 </template>
@@ -367,6 +435,7 @@ const handleHardDrop = () => {
   else hardDrop()
 }
 const showMenu = ref(false)
+const showHelp = ref(false)
 const confirmAction = ref<'restart' | 'quit' | null>(null)
 const handleStartClassic = () => { startGame() }
 const handleStartIzakaya = () => { izakaya.initIzakayaRandom() }
