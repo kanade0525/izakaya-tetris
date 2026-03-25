@@ -39,6 +39,8 @@ export interface GameState {
   izakayaPhase: IzakayaPhase
   excludedPieces: number[]
   drawnResult: DrawnResult | null
+  droppedCount: number
+  stocksUsed: number
 }
 
 const BOARD_WIDTH = 10
@@ -77,7 +79,9 @@ const gameState = ref<GameState>({
   stocks: 0,
   izakayaPhase: 'idle',
   excludedPieces: [],
-  drawnResult: null
+  drawnResult: null,
+  droppedCount: 0,
+  stocksUsed: 0
 })
 
 export const useTetris = () => {
@@ -266,6 +270,8 @@ export const useTetris = () => {
     gameState.value.izakayaPhase = 'idle'
     gameState.value.excludedPieces = []
     gameState.value.drawnResult = null
+    gameState.value.droppedCount = 0
+    gameState.value.stocksUsed = 0
   }
 
   const togglePause = () => {

@@ -46,6 +46,9 @@ body {
 .stock-number {
   font-size: 20px; font-weight: 700; min-width: 28px; text-align: center;
 }
+.izk-stats {
+  font-size: 10px; color: rgba(255,255,255,0.4); margin-left: 4px; white-space: nowrap;
+}
 .izk-header-actions {
   display: flex; align-items: center; gap: 6px;
 }

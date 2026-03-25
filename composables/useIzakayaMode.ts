@@ -76,6 +76,8 @@ export const useIzakayaMode = () => {
       const data = {
         board: gameState.value.board,
         stocks: gameState.value.stocks,
+        droppedCount: gameState.value.droppedCount,
+        stocksUsed: gameState.value.stocksUsed,
         undoStack: undoStack.value,
         redoStack: redoStack.value,
       }
@@ -102,6 +104,8 @@ export const useIzakayaMode = () => {
       gameState.value.drawnResult = null
       gameState.value.excludedPieces = []
       gameState.value.clearingRows = []
+      gameState.value.droppedCount = data.droppedCount ?? 0
+      gameState.value.stocksUsed = data.stocksUsed ?? 0
       undoStack.value = data.undoStack ?? []
       redoStack.value = data.redoStack ?? []
       return true
@@ -192,6 +196,7 @@ export const useIzakayaMode = () => {
     pushHistory()
 
     const totalCost = 1 + exclusionCost()
+    gameState.value.stocksUsed += totalCost
     removeStock(totalCost)
     // Result is determined now but revealed after rolling animation
     const result = drawPiece(gameState.value.excludedPieces)
@@ -225,6 +230,7 @@ export const useIzakayaMode = () => {
   }
 
   const startDropping = () => {
+    gameState.value.droppedCount++
     setPhase('dropping')
   }
 
@@ -322,6 +328,8 @@ export const useIzakayaMode = () => {
     gameState.value.drawnResult = null
     gameState.value.excludedPieces = []
     gameState.value.clearingRows = []
+    gameState.value.droppedCount = 0
+    gameState.value.stocksUsed = 0
     undoStack.value = []
     redoStack.value = []
     expandBoardIfNeeded()
@@ -358,6 +366,8 @@ export const useIzakayaMode = () => {
     gameState.value.drawnResult = null
     gameState.value.excludedPieces = []
     gameState.value.clearingRows = []
+    gameState.value.droppedCount = 0
+    gameState.value.stocksUsed = 0
     undoStack.value = []
     redoStack.value = []
     saveToStorage()
