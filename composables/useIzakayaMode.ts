@@ -1,5 +1,13 @@
 import type { DrawnResult, IzakayaPhase } from './useTetris'
 
+// --- Undo/Redo History ---
+interface HistoryEntry {
+  board: number[][]
+  stocks: number
+}
+
+const STORAGE_KEY = 'izakaya-tetris-save'
+
 export const useIzakayaMode = () => {
   const {
     gameState, movePiece, isValidMove, commitClear, createPiece,
@@ -7,13 +15,114 @@ export const useIzakayaMode = () => {
     BOARD_WIDTH, BOARD_HEIGHT, MAX_BOARD_HEIGHT, PIECES
   } = useTetris()
 
+  // --- History for Undo/Redo ---
+  const undoStack = ref<HistoryEntry[]>([])
+  const redoStack = ref<HistoryEntry[]>([])
+
+  const pushHistory = () => {
+    undoStack.value.push({
+      board: gameState.value.board.map(row => [...row]),
+      stocks: gameState.value.stocks
+    })
+    redoStack.value = []
+    // Limit history size
+    if (undoStack.value.length > 50) {
+      undoStack.value.shift()
+    }
+  }
+
+  const undo = () => {
+    if (undoStack.value.length === 0) return
+    // Save current state to redo
+    redoStack.value.push({
+      board: gameState.value.board.map(row => [...row]),
+      stocks: gameState.value.stocks
+    })
+    const prev = undoStack.value.pop()!
+    gameState.value.board = prev.board
+    gameState.value.stocks = prev.stocks
+    gameState.value.currentPiece = null
+    gameState.value.izakayaPhase = 'idle'
+    gameState.value.drawnResult = null
+    gameState.value.excludedPieces = []
+    gameState.value.clearingRows = []
+    saveToStorage()
+  }
+
+  const redo = () => {
+    if (redoStack.value.length === 0) return
+    undoStack.value.push({
+      board: gameState.value.board.map(row => [...row]),
+      stocks: gameState.value.stocks
+    })
+    const next = redoStack.value.pop()!
+    gameState.value.board = next.board
+    gameState.value.stocks = next.stocks
+    gameState.value.currentPiece = null
+    gameState.value.izakayaPhase = 'idle'
+    gameState.value.drawnResult = null
+    gameState.value.excludedPieces = []
+    gameState.value.clearingRows = []
+    saveToStorage()
+  }
+
+  const canUndo = () => undoStack.value.length > 0
+  const canRedo = () => redoStack.value.length > 0
+
+  // --- LocalStorage Persistence ---
+  const saveToStorage = () => {
+    if (gameState.value.mode !== 'izakaya') return
+    try {
+      const data = {
+        board: gameState.value.board,
+        stocks: gameState.value.stocks,
+        undoStack: undoStack.value,
+        redoStack: redoStack.value,
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+    } catch {}
+  }
+
+  const loadFromStorage = (): boolean => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY)
+      if (!raw) return false
+      const data = JSON.parse(raw)
+      if (!data.board || !Array.isArray(data.board)) return false
+
+      gameState.value.board = data.board
+      gameState.value.stocks = data.stocks ?? 0
+      gameState.value.mode = 'izakaya'
+      gameState.value.izakayaPhase = 'idle'
+      gameState.value.currentPiece = null
+      gameState.value.nextPiece = null
+      gameState.value.gameOver = false
+      gameState.value.paused = false
+      gameState.value.started = true
+      gameState.value.drawnResult = null
+      gameState.value.excludedPieces = []
+      gameState.value.clearingRows = []
+      undoStack.value = data.undoStack ?? []
+      redoStack.value = data.redoStack ?? []
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  const clearStorage = () => {
+    try { localStorage.removeItem(STORAGE_KEY) } catch {}
+  }
+
   // --- Stock Management ---
   const addStock = (n: number = 1) => {
     gameState.value.stocks += n
+    saveToStorage()
   }
 
   const removeStock = (n: number = 1) => {
     gameState.value.stocks = Math.max(0, gameState.value.stocks - n)
+    saveToStorage()
   }
 
   const canDrop = () => gameState.value.stocks > 0
@@ -40,7 +149,6 @@ export const useIzakayaMode = () => {
     if (idx >= 0) {
       gameState.value.excludedPieces.splice(idx, 1)
     } else {
-      // Check if player has enough stocks (1 base + current exclusions + 1 new)
       const totalCost = 1 + gameState.value.excludedPieces.length + 1
       if (totalCost <= gameState.value.stocks) {
         gameState.value.excludedPieces.push(drawType)
@@ -80,10 +188,19 @@ export const useIzakayaMode = () => {
   }
 
   const executeDraw = () => {
-    const result = drawPiece(gameState.value.excludedPieces)
+    // Save state before the draw for undo
+    pushHistory()
+
     const totalCost = 1 + exclusionCost()
     removeStock(totalCost)
+    // Result is determined now but revealed after rolling animation
+    const result = drawPiece(gameState.value.excludedPieces)
     gameState.value.drawnResult = result
+    setPhase('rolling')
+  }
+
+  // Called after rolling animation completes
+  const revealDraw = () => {
     setPhase('drawing')
   }
 
@@ -115,14 +232,13 @@ export const useIzakayaMode = () => {
     gameState.value.drawnResult = null
     gameState.value.excludedPieces = []
     setPhase('idle')
+    saveToStorage()
   }
 
   // --- Piece Spawn for Izakaya Mode ---
   const spawnIzakayaPiece = (pieceIndex: number) => {
     const piece = createPiece(pieceIndex)
-    // Spawn at top of the board
     piece.y = 0
-    // Find first row with space if top is occupied
     while (!isValidMove(piece, gameState.value.board) && piece.y > -4) {
       piece.y--
     }
@@ -130,7 +246,6 @@ export const useIzakayaMode = () => {
   }
 
   // --- Piece Placed (izakaya mode) ---
-  // Called AFTER movePiece already merged the piece and set currentPiece = null
   const onIzakayaPiecePlaced = () => {
     expandBoardIfNeeded()
     const fullRows = findFullRows(gameState.value.board)
@@ -143,13 +258,14 @@ export const useIzakayaMode = () => {
 
       if (checkWin()) {
         setPhase('won')
+        clearStorage()
       } else {
         setPhase('placed')
+        saveToStorage()
       }
     }
   }
 
-  // Called after line clear animation in izakaya mode
   const onIzakayaClearDone = () => {
     gameState.value.currentPiece = null
     gameState.value.drawnResult = null
@@ -157,8 +273,10 @@ export const useIzakayaMode = () => {
 
     if (checkWin()) {
       setPhase('won')
+      clearStorage()
     } else {
       setPhase('placed')
+      saveToStorage()
     }
   }
 
@@ -168,29 +286,29 @@ export const useIzakayaMode = () => {
   }
 
   // --- Board Expansion ---
+  // Always maintain 5 empty rows at the top. Add rows one at a time, up to MAX.
   const expandBoardIfNeeded = () => {
     const board = gameState.value.board
-    // Check if top rows have blocks
-    let needExpand = false
-    for (let y = 0; y < 4; y++) {
-      if (board[y] && board[y].some(cell => cell !== 0)) {
-        needExpand = true
-        break
-      }
+    // Count empty rows at top
+    let emptyTop = 0
+    for (let y = 0; y < board.length; y++) {
+      if (board[y].every(cell => cell === 0)) emptyTop++
+      else break
     }
-    if (needExpand && board.length < MAX_BOARD_HEIGHT) {
-      const addRows = Math.min(10, MAX_BOARD_HEIGHT - board.length)
-      const emptyRows = []
+    // Need at least 5 empty rows at top
+    const needed = 5 - emptyTop
+    if (needed > 0 && board.length < MAX_BOARD_HEIGHT) {
+      const addRows = Math.min(needed, MAX_BOARD_HEIGHT - board.length)
+      const newRows = []
       for (let i = 0; i < addRows; i++) {
-        emptyRows.push(new Array(BOARD_WIDTH).fill(0))
+        newRows.push(new Array(BOARD_WIDTH).fill(0))
       }
-      gameState.value.board = [...emptyRows, ...board]
+      gameState.value.board = [...newRows, ...board]
     }
   }
 
   // --- Init Izakaya Mode ---
   const initIzakayaFromClassic = () => {
-    // Take the current 20-row board as-is (don't expand yet)
     gameState.value.mode = 'izakaya'
     gameState.value.izakayaPhase = 'idle'
     gameState.value.stocks = 0
@@ -202,21 +320,22 @@ export const useIzakayaMode = () => {
     gameState.value.drawnResult = null
     gameState.value.excludedPieces = []
     gameState.value.clearingRows = []
+    undoStack.value = []
+    redoStack.value = []
+    expandBoardIfNeeded()
+    saveToStorage()
   }
 
   const initIzakayaRandom = () => {
-    // Generate a 10x25 board: top 5 rows empty, bottom 20 rows randomly filled
     const totalRows = 25
     const board = initBoard(totalRows)
     const emptyTop = 5
     for (let y = emptyTop; y < totalRows; y++) {
       for (let x = 0; x < BOARD_WIDTH; x++) {
-        // ~65% chance of a block
         if (Math.random() < 0.65) {
           board[y][x] = Math.floor(Math.random() * PIECES.length) + 1
         }
       }
-      // Make sure no row is completely full (would auto-clear)
       if (board[y].every(cell => cell !== 0)) {
         board[y][Math.floor(Math.random() * BOARD_WIDTH)] = 0
       }
@@ -237,44 +356,23 @@ export const useIzakayaMode = () => {
     gameState.value.drawnResult = null
     gameState.value.excludedPieces = []
     gameState.value.clearingRows = []
+    undoStack.value = []
+    redoStack.value = []
+    saveToStorage()
   }
 
   return {
     gameState,
-    // Stock
-    addStock,
-    removeStock,
-    canDrop,
-    // Draw
-    DRAW_WILDCARD,
-    DRAW_MISS,
-    ALL_DRAW_TYPES,
-    exclusionCost,
-    // Phase transitions
-    requestDrop,
-    cancelDrop,
-    openExclusion,
-    confirmExclusion,
-    skipExclusion,
-    confirmDraw,
-    selectWildcard,
-    startDropping,
-    dismissMiss,
-    toggleExclude,
-    // Piece placed
-    onIzakayaPiecePlaced,
-    onIzakayaClearDone,
-    checkWin,
-    // Init
-    initIzakayaFromClassic,
-    initIzakayaRandom,
-    // Re-export from useTetris
-    movePiece,
-    isValidMove,
-    commitClear,
-    BOARD_WIDTH,
-    BOARD_HEIGHT,
-    MAX_BOARD_HEIGHT,
-    PIECES,
+    addStock, removeStock, canDrop,
+    DRAW_WILDCARD, DRAW_MISS, ALL_DRAW_TYPES, exclusionCost,
+    requestDrop, cancelDrop, openExclusion, confirmExclusion,
+    skipExclusion, confirmDraw, revealDraw, selectWildcard, startDropping,
+    dismissMiss, toggleExclude,
+    onIzakayaPiecePlaced, onIzakayaClearDone, checkWin,
+    initIzakayaFromClassic, initIzakayaRandom,
+    loadFromStorage, clearStorage, saveToStorage,
+    undo, redo, canUndo, canRedo,
+    movePiece, isValidMove, commitClear,
+    BOARD_WIDTH, BOARD_HEIGHT, MAX_BOARD_HEIGHT, PIECES,
   }
 }

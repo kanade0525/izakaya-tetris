@@ -1,155 +1,174 @@
 <template>
   <div id="game-container">
     <!-- Header -->
-    <div class="game-header">
-      <div class="score-display" v-if="gameState.mode === 'classic'">
-        <span>🍺 Lv.{{ gameState.level }}</span>
-      </div>
-      <div class="score-display" v-else>
-        <span>🍺 ストック: {{ gameState.stocks }}</span>
-        <button class="stock-btn" @click="izakaya.removeStock(1)">−</button>
-        <button class="stock-btn" @click="izakaya.addStock(1)">＋</button>
-      </div>
-      <button
-        v-if="gameState.started && !gameState.gameOver && gameState.mode === 'classic'"
-        @click="openMenu"
-        class="pause-btn"
-      >
-        <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-      </button>
-      <button
-        v-if="gameState.mode === 'izakaya' && gameState.izakayaPhase !== 'dropping' && gameState.izakayaPhase !== 'countdown'"
-        @click="openMenu"
-        class="pause-btn"
-      >
-        <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-      </button>
-    </div>
-
-    <!-- Game Canvas -->
-    <div class="game-canvas-wrapper" ref="wrapperRef">
-      <canvas ref="canvasRef"></canvas>
-
-      <!-- Title Screen -->
-      <div v-if="!gameState.started" class="title-overlay">
-        <div class="title-text">居酒屋<br>TETRIS</div>
-        <div class="mode-buttons">
-          <button class="mode-btn" @click="handleStartClassic" @touchstart.prevent="handleStartClassic">クラシック</button>
-          <button class="mode-btn mode-btn-izakaya" @click="handleStartIzakaya" @touchstart.prevent="handleStartIzakaya">居酒屋モード</button>
-        </div>
-      </div>
-
-      <!-- Classic Game Over -->
-      <div v-else-if="gameState.mode === 'classic' && gameState.gameOver" class="title-overlay">
-        <div class="gameover-text">GAME OVER</div>
-        <div class="gameover-score">🍻 お疲れさま!</div>
-        <div class="mode-buttons">
-          <button class="mode-btn" @click="handleStartClassic">もう一回</button>
-          <button class="mode-btn mode-btn-izakaya" @click="handleIzakayaFromClassic">居酒屋モードへ</button>
-        </div>
-      </div>
-
-      <!-- Pause Menu -->
-      <div v-else-if="showMenu" class="title-overlay" @click.self="handleResume" @touchstart.self.prevent="handleResume">
-        <div class="menu-box">
-          <div class="menu-title">🍶 中断中</div>
-          <button class="menu-item" @click="handleResume">▶ 再開</button>
-          <button class="menu-item" @click="handleRestart">🔄 最初から</button>
-          <button class="menu-item menu-item-quit" @click="handleQuit">🚪 やめる</button>
-        </div>
-      </div>
-
-      <!-- Izakaya: Confirm Dialog -->
-      <div v-else-if="gameState.izakayaPhase === 'confirm'" class="title-overlay">
-        <div class="menu-box">
-          <div class="menu-title">🍺 ブロックを落とす</div>
-          <div class="confirm-text">ストックを1消費してブロックを落としますか？</div>
-          <button class="menu-item" @click="izakaya.skipExclusion()">🎲 落とす</button>
-          <button class="menu-item" @click="izakaya.openExclusion()">🚫 除外設定</button>
-          <button class="menu-item menu-item-quit" @click="izakaya.cancelDrop()">キャンセル</button>
-        </div>
-      </div>
-
-      <!-- Izakaya: Exclusion Selection -->
-      <div v-else-if="gameState.izakayaPhase === 'exclusion'" class="title-overlay">
-        <div class="menu-box exclusion-box">
-          <div class="menu-title">🚫 除外設定</div>
-          <div class="exclusion-desc">出てほしくないブロックを選択（1つにつき+1ストック）</div>
-          <div class="exclusion-grid">
-            <button
-              v-for="(dt, i) in izakaya.ALL_DRAW_TYPES"
-              :key="dt"
-              class="exclusion-item"
-              :class="{ selected: gameState.excludedPieces.includes(dt) }"
-              @click="izakaya.toggleExclude(dt)"
-            >
-              <span v-if="dt < 7" class="piece-label">{{ pieceNames[dt] }}</span>
-              <span v-else-if="dt === izakaya.DRAW_WILDCARD">🃏</span>
-              <span v-else>💀</span>
+    <div class="game-header" v-if="gameState.started">
+      <!-- Classic header -->
+      <template v-if="gameState.mode === 'classic'">
+        <div class="score-display">Lv.{{ gameState.level }}</div>
+        <button v-if="!gameState.gameOver" @click="openMenu" class="icon-btn">
+          <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+        </button>
+      </template>
+      <!-- Izakaya header -->
+      <template v-else>
+        <div class="izk-header">
+          <div class="stock-group">
+            <span class="stock-label">ストック</span>
+            <button class="icon-btn small" @click="izakaya.removeStock(1)">
+              <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19 13H5v-2h14v2z"/></svg>
+            </button>
+            <span class="stock-number">{{ gameState.stocks }}</span>
+            <button class="icon-btn small" @click="izakaya.addStock(1)">
+              <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
             </button>
           </div>
-          <div class="exclusion-cost">追加コスト: {{ izakaya.exclusionCost() }} ストック（合計 {{ 1 + izakaya.exclusionCost() }}）</div>
-          <button class="menu-item" @click="izakaya.confirmExclusion()">決定</button>
-          <button class="menu-item menu-item-quit" @click="izakaya.skipExclusion()">使わない</button>
-        </div>
-      </div>
-
-      <!-- Izakaya: Drawing Result -->
-      <div v-else-if="gameState.izakayaPhase === 'drawing'" class="title-overlay">
-        <div class="drawing-result" @click="izakaya.confirmDraw()" @touchstart.prevent="izakaya.confirmDraw()">
-          <template v-if="gameState.drawnResult?.type === 'piece'">
-            <div class="drawn-piece-name">{{ pieceNames[gameState.drawnResult.pieceIndex] }}</div>
-            <div class="drawn-label">ブロック出現！</div>
-          </template>
-          <template v-else-if="gameState.drawnResult?.type === 'wildcard'">
-            <div class="drawn-piece-name">🃏</div>
-            <div class="drawn-label">ワイルドカード！</div>
-          </template>
-          <template v-else>
-            <div class="drawn-piece-name">💀</div>
-            <div class="drawn-label">ハズレ</div>
-          </template>
-          <div class="start-text">TAP</div>
-        </div>
-      </div>
-
-      <!-- Izakaya: Wildcard Selection -->
-      <div v-else-if="gameState.izakayaPhase === 'wildcard'" class="title-overlay">
-        <div class="menu-box">
-          <div class="menu-title">🃏 ブロックを選ぶ</div>
-          <div class="wildcard-grid">
-            <button
-              v-for="(piece, i) in PIECES"
-              :key="i"
-              class="wildcard-item"
-              @click="izakaya.selectWildcard(i)"
-            >
-              <span class="piece-label">{{ pieceNames[i] }}</span>
+          <div class="izk-header-actions">
+            <button class="icon-btn small" :disabled="!izakaya.canUndo()" @click="izakaya.undo()">
+              <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M12.5 8c-2.65 0-5.05 1.04-6.83 2.73L3 8v8h8l-2.68-2.68A7.46 7.46 0 0 1 12.5 11c3.04 0 5.62 1.82 6.78 4.42l2.22-.93A9.96 9.96 0 0 0 12.5 8z"/></svg>
+            </button>
+            <button class="icon-btn small" :disabled="!izakaya.canRedo()" @click="izakaya.redo()">
+              <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M11.5 8c2.65 0 5.05 1.04 6.83 2.73L21 8v8h-8l2.68-2.68A7.46 7.46 0 0 0 11.5 11c-3.04 0-5.62 1.82-6.78 4.42L2.5 14.5A9.96 9.96 0 0 1 11.5 8z"/></svg>
+            </button>
+            <button class="icon-btn small" @click="openMenu">
+              <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
             </button>
           </div>
         </div>
-      </div>
+      </template>
+    </div>
 
-      <!-- Izakaya: Countdown -->
-      <div v-else-if="gameState.izakayaPhase === 'countdown'" class="title-overlay countdown-overlay">
-        <div class="countdown-number">{{ countdownValue }}</div>
-      </div>
+    <!-- Main Area -->
+    <div class="game-main">
+      <!-- Canvas -->
+      <div class="game-canvas-wrapper" ref="wrapperRef">
+        <canvas ref="canvasRef"></canvas>
 
-      <!-- Izakaya: Miss -->
-      <div v-else-if="gameState.izakayaPhase === 'miss'" class="title-overlay" @click="izakaya.dismissMiss()" @touchstart.prevent="izakaya.dismissMiss()">
-        <div class="miss-text">ハズレ</div>
-        <div class="start-text">TAP</div>
-      </div>
+        <!-- Overlays -->
+        <div v-if="!gameState.started" class="title-overlay">
+          <div class="title-text">居酒屋<br>TETRIS</div>
+          <div class="mode-buttons">
+            <button class="mode-btn" @click="handleStartClassic" @touchstart.prevent="handleStartClassic">まずゲームオーバーになるまで遊ぶ</button>
+            <button class="mode-btn mode-btn-izakaya" @click="handleStartIzakaya" @touchstart.prevent="handleStartIzakaya">ゲームオーバー状態から開始する</button>
+            <button v-if="hasSave" class="mode-btn mode-btn-resume" @click="handleResumeSave" @touchstart.prevent="handleResumeSave">続きから</button>
+          </div>
+        </div>
 
-      <!-- Izakaya: Won -->
-      <div v-else-if="gameState.izakayaPhase === 'won'" class="title-overlay">
-        <div class="won-text">全消し達成!</div>
-        <div class="won-emoji">🎉🍻🎉</div>
-        <button class="mode-btn" @click="handleQuit">タイトルへ</button>
+        <div v-else-if="gameState.mode === 'classic' && gameState.gameOver" class="title-overlay">
+          <div class="gameover-text">GAME OVER</div>
+          <div class="mode-buttons">
+            <button class="mode-btn" @click="handleStartClassic">もう一回</button>
+            <button class="mode-btn mode-btn-izakaya" @click="handleIzakayaFromClassic">この盤面から開始する</button>
+          </div>
+        </div>
+
+        <div v-else-if="showMenu" class="title-overlay" @click.self="handleResume" @touchstart.self.prevent="handleResume">
+          <div class="menu-box" v-if="!confirmAction">
+            <div class="menu-title">中断中</div>
+            <button class="menu-item" @click="handleResume">再開</button>
+            <button class="menu-item" @click="confirmAction = 'restart'">最初から</button>
+            <button class="menu-item menu-item-quit" @click="handleQuit">やめる</button>
+          </div>
+          <div class="menu-box" v-else>
+            <div class="menu-title">最初からやり直しますか？</div>
+            <div class="confirm-text">現在の盤面データは失われます</div>
+            <button class="menu-item menu-item-quit" @click="handleRestart">はい</button>
+            <button class="menu-item" @click="confirmAction = null">いいえ</button>
+          </div>
+        </div>
+
+        <div v-else-if="gameState.izakayaPhase === 'confirm'" class="title-overlay">
+          <div class="menu-box">
+            <div class="menu-title">ブロックを落とす</div>
+            <div class="confirm-text">ストックを1消費して<br>ブロックを落としますか？</div>
+            <button class="menu-item" @click="izakaya.skipExclusion()">落とす</button>
+            <button class="menu-item" @click="izakaya.openExclusion()">落としたくないブロックを選ぶ</button>
+            <button class="menu-item menu-item-quit" @click="izakaya.cancelDrop()">キャンセル</button>
+          </div>
+        </div>
+
+        <div v-else-if="gameState.izakayaPhase === 'exclusion'" class="title-overlay">
+          <div class="menu-box exclusion-box">
+            <div class="menu-title">落としたくないブロックを選ぶ</div>
+            <div class="exclusion-desc">出てほしくないブロックを選択（1つにつき+1ストック）</div>
+            <div class="exclusion-grid">
+              <button v-for="dt in izakaya.ALL_DRAW_TYPES" :key="dt" class="exclusion-item" :class="{ selected: gameState.excludedPieces.includes(dt) }" @click="izakaya.toggleExclude(dt)">
+                <PiecePreview v-if="dt < 7" :piece-index="dt" />
+                <span v-else-if="dt === izakaya.DRAW_WILDCARD" class="draw-label">?</span>
+                <span v-else class="draw-label">--</span>
+              </button>
+            </div>
+            <div class="exclusion-cost">追加コスト: {{ izakaya.exclusionCost() }} （合計 {{ 1 + izakaya.exclusionCost() }}）</div>
+            <button class="menu-item" @click="izakaya.confirmExclusion()">決定</button>
+            <button class="menu-item menu-item-quit" @click="izakaya.skipExclusion()">使わない</button>
+          </div>
+        </div>
+
+        <!-- Rolling animation -->
+        <div v-else-if="gameState.izakayaPhase === 'rolling'" class="title-overlay">
+          <div class="rolling-container">
+            <div class="rolling-slot">
+              <div class="rolling-items">
+                <template v-if="rollingPool[rollingTick % rollingPool.length] < 7">
+                  <PiecePreview :piece-index="rollingPool[rollingTick % rollingPool.length]" size="large" />
+                </template>
+                <span v-else-if="rollingPool[rollingTick % rollingPool.length] === izakaya.DRAW_WILDCARD" class="rolling-result-text">?</span>
+                <span v-else class="rolling-result-text dim">--</span>
+              </div>
+            </div>
+            <div class="rolling-label">抽選中...</div>
+          </div>
+        </div>
+
+        <!-- Draw result: piece -->
+        <div v-else-if="gameState.izakayaPhase === 'drawing' && gameState.drawnResult?.type === 'piece'" class="title-overlay" @click="izakaya.confirmDraw()" @touchstart.prevent="izakaya.confirmDraw()">
+          <div class="drawing-result">
+            <PiecePreview :piece-index="gameState.drawnResult.pieceIndex" size="large" />
+            <div class="drawn-label">ブロック出現</div>
+            <div class="start-text">タップするとブロックが落ちてきます</div>
+          </div>
+        </div>
+
+        <!-- Draw result: wildcard -->
+        <div v-else-if="gameState.izakayaPhase === 'drawing' && gameState.drawnResult?.type === 'wildcard'" class="title-overlay" @click="izakaya.confirmDraw()" @touchstart.prevent="izakaya.confirmDraw()">
+          <div class="drawing-result">
+            <div class="drawn-text">?</div>
+            <div class="drawn-label">何でもブロック</div>
+            <div class="start-text">タップしてブロックを選ぶ</div>
+          </div>
+        </div>
+
+        <!-- Draw result: miss -->
+        <div v-else-if="gameState.izakayaPhase === 'drawing' && gameState.drawnResult?.type === 'miss'" class="title-overlay" @click="izakaya.dismissMiss()" @touchstart.prevent="izakaya.dismissMiss()">
+          <div class="drawing-result">
+            <div class="drawn-text miss">ハズレ</div>
+            <div class="start-text">タップして戻る</div>
+          </div>
+        </div>
+
+        <!-- Wildcard selection -->
+        <div v-else-if="gameState.izakayaPhase === 'wildcard'" class="title-overlay">
+          <div class="menu-box">
+            <div class="menu-title">何でもブロック</div>
+            <div class="wildcard-grid">
+              <button v-for="(_, i) in PIECES" :key="i" class="wildcard-item" @click="izakaya.selectWildcard(i)">
+                <PiecePreview :piece-index="i" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div v-else-if="gameState.izakayaPhase === 'countdown'" class="title-overlay countdown-overlay">
+          <div class="countdown-number">{{ countdownValue }}</div>
+        </div>
+
+        <div v-else-if="gameState.izakayaPhase === 'won'" class="title-overlay">
+          <div class="won-text">全消し達成!</div>
+          <button class="mode-btn" @click="handleQuit">タイトルへ</button>
+        </div>
       </div>
     </div>
 
-    <!-- Controls -->
+    <!-- Bottom: Tetris controls (classic + izakaya dropping) -->
     <div class="controls-container" v-if="showTetrisControls">
       <div class="control-left">
         <button @touchstart.prevent="handleMove('left')" @mousedown.prevent="handleMove('left')" class="move-btn">
@@ -172,89 +191,83 @@
       </div>
     </div>
 
-    <!-- Izakaya idle controls -->
-    <div class="controls-container izakaya-controls" v-else-if="gameState.mode === 'izakaya'">
-      <button
-        v-if="gameState.izakayaPhase === 'idle' || gameState.izakayaPhase === 'placed'"
-        class="izakaya-drop-btn"
-        :disabled="!izakaya.canDrop()"
-        @click="izakaya.requestDrop()"
-      >
-        🎲 ブロックを落とす
+    <!-- Bottom: Izakaya idle/placed -->
+    <div class="controls-container izk-bottom" v-else-if="gameState.mode === 'izakaya' && gameState.started && (gameState.izakayaPhase === 'idle' || gameState.izakayaPhase === 'placed')">
+      <button class="izk-drop-btn" :disabled="!izakaya.canDrop()" @click="izakaya.requestDrop()">
+        ブロックを落とす
       </button>
-      <span v-else class="izakaya-phase-spacer">&nbsp;</span>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+const PiecePreview = defineComponent({
+  props: { pieceIndex: { type: Number, required: true }, size: { type: String, default: 'small' } },
+  setup(props) {
+    const { PIECES } = useTetris()
+    return () => {
+      const piece = PIECES[props.pieceIndex]
+      if (!piece) return null
+      const s = props.size === 'large' ? 16 : 8
+      return h('div', { class: 'piece-preview', style: { display: 'inline-grid', gridTemplateColumns: `repeat(${piece.shape[0].length}, ${s}px)`, gap: '1px' } },
+        piece.shape.flatMap((row: number[]) => row.map((cell: number) =>
+          h('div', { style: { width: s + 'px', height: s + 'px', borderRadius: '2px', background: cell ? piece.color : 'transparent' } })
+        ))
+      )
+    }
+  }
+})
+
 const { gameState, movePiece, rotate, hardDrop, startGame, togglePause, isValidMove, commitClear, BOARD_WIDTH, BOARD_HEIGHT, PIECES } = useTetris()
 const izakaya = useIzakayaMode()
 
-const pieceNames = ['I', 'O', 'T', 'S', 'Z', 'J', 'L']
-
 const canvasRef = ref<HTMLCanvasElement>()
 const wrapperRef = ref<HTMLElement>()
-
 const BLOCK_SIZE = 30
-
-// Countdown state
 const countdownValue = ref(3)
 let countdownInterval: ReturnType<typeof setInterval> | null = null
+const hasSave = ref(false)
+let resizeObserver: ResizeObserver | null = null
+
+// Rolling animation state
+const rollingDone = ref(false)
+const rollingTick = ref(0)
+let rollingInterval: ReturnType<typeof setInterval> | null = null
+
+const rollingPool = computed(() => {
+  const excluded = gameState.value.excludedPieces
+  return izakaya.ALL_DRAW_TYPES.filter((t: number) => !excluded.includes(t))
+})
 
 const showTetrisControls = computed(() => {
-  if (gameState.value.mode === 'classic') {
-    return gameState.value.started && !gameState.value.gameOver && !gameState.value.paused
-  }
+  if (gameState.value.mode === 'classic') return gameState.value.started && !gameState.value.gameOver && !gameState.value.paused
   return gameState.value.izakayaPhase === 'dropping'
 })
 
-// --- Canvas Rendering ---
+// --- Canvas ---
 const resizeCanvas = () => {
   const canvas = canvasRef.value
-  const wrapper = wrapperRef.value
-  if (!canvas || !wrapper) return
-
+  if (!canvas) return
   const boardRows = gameState.value.board.length || BOARD_HEIGHT
-  const logicalW = BOARD_WIDTH * BLOCK_SIZE
-  const logicalH = boardRows * BLOCK_SIZE
-
-  // Set the internal resolution
-  canvas.width = logicalW
-  canvas.height = logicalH
-
-  // Fit to wrapper via CSS
-  const availW = wrapper.clientWidth
-  const availH = wrapper.clientHeight
-  const scale = Math.min(availW / logicalW, availH / logicalH)
-  canvas.style.width = Math.floor(logicalW * scale) + 'px'
-  canvas.style.height = Math.floor(logicalH * scale) + 'px'
+  canvas.width = BOARD_WIDTH * BLOCK_SIZE
+  canvas.height = boardRows * BLOCK_SIZE
 }
 
 const drawBlock = (ctx: CanvasRenderingContext2D, x: number, y: number, color: string) => {
-  const px = x * BLOCK_SIZE
-  const py = y * BLOCK_SIZE
-
+  const px = x * BLOCK_SIZE, py = y * BLOCK_SIZE
   ctx.fillStyle = color
   ctx.fillRect(px + 1, py + 1, BLOCK_SIZE - 2, BLOCK_SIZE - 2)
-
-  // Highlight
   ctx.fillStyle = 'rgba(255,255,255,0.3)'
   ctx.fillRect(px + 1, py + 1, BLOCK_SIZE - 2, 3)
   ctx.fillRect(px + 1, py + 1, 3, BLOCK_SIZE - 2)
-
-  // Shadow
   ctx.fillStyle = 'rgba(0,0,0,0.3)'
   ctx.fillRect(px + BLOCK_SIZE - 3, py + 1, 2, BLOCK_SIZE - 2)
   ctx.fillRect(px + 1, py + BLOCK_SIZE - 3, BLOCK_SIZE - 2, 2)
 }
 
 const drawGhost = (ctx: CanvasRenderingContext2D, x: number, y: number, color: string) => {
-  const px = x * BLOCK_SIZE
-  const py = y * BLOCK_SIZE
-  ctx.strokeStyle = color
-  ctx.globalAlpha = 0.4
-  ctx.lineWidth = 2
+  const px = x * BLOCK_SIZE, py = y * BLOCK_SIZE
+  ctx.strokeStyle = color; ctx.globalAlpha = 0.4; ctx.lineWidth = 2
   ctx.strokeRect(px + 2, py + 2, BLOCK_SIZE - 4, BLOCK_SIZE - 4)
   ctx.globalAlpha = 1
 }
@@ -266,361 +279,140 @@ const renderBoard = () => {
   if (!canvas) return
   const ctx = canvas.getContext('2d')
   if (!ctx) return
-
   const board = gameState.value.board
   const boardRows = board.length
-  const isIzakaya = gameState.value.mode === 'izakaya'
-  const w = BOARD_WIDTH * BLOCK_SIZE
-  const h = boardRows * BLOCK_SIZE
+  const isIzk = gameState.value.mode === 'izakaya'
+  const w = BOARD_WIDTH * BLOCK_SIZE, h = boardRows * BLOCK_SIZE
 
-  ctx.save()
-  ctx.translate(shakeOffset.x, shakeOffset.y)
-
-  // Background
-  ctx.fillStyle = '#0a0a0a'
-  ctx.fillRect(0, 0, w, h)
-
-  // Grid
-  ctx.strokeStyle = 'rgba(34,34,34,0.3)'
-  ctx.lineWidth = 1
-  for (let x = 0; x <= BOARD_WIDTH; x++) {
-    ctx.beginPath()
-    ctx.moveTo(x * BLOCK_SIZE, 0)
-    ctx.lineTo(x * BLOCK_SIZE, h)
-    ctx.stroke()
+  ctx.save(); ctx.translate(shakeOffset.x, shakeOffset.y)
+  ctx.fillStyle = '#0a0a0a'; ctx.fillRect(0, 0, w, h)
+  ctx.strokeStyle = 'rgba(34,34,34,0.3)'; ctx.lineWidth = 1
+  for (let x = 0; x <= BOARD_WIDTH; x++) { ctx.beginPath(); ctx.moveTo(x * BLOCK_SIZE, 0); ctx.lineTo(x * BLOCK_SIZE, h); ctx.stroke() }
+  for (let y = 0; y <= boardRows; y++) { ctx.beginPath(); ctx.moveTo(0, y * BLOCK_SIZE); ctx.lineTo(w, y * BLOCK_SIZE); ctx.stroke() }
+  if (isIzk && boardRows >= 20) {
+    const ry = (boardRows - 20) * BLOCK_SIZE
+    ctx.strokeStyle = 'rgba(255,51,51,0.7)'; ctx.lineWidth = 2
+    ctx.beginPath(); ctx.moveTo(0, ry); ctx.lineTo(w, ry); ctx.stroke()
   }
-  for (let y = 0; y <= boardRows; y++) {
-    ctx.beginPath()
-    ctx.moveTo(0, y * BLOCK_SIZE)
-    ctx.lineTo(w, y * BLOCK_SIZE)
-    ctx.stroke()
-  }
-
-  // Red line (izakaya)
-  if (isIzakaya) {
-    const redLineY = (boardRows - 20) * BLOCK_SIZE
-    ctx.strokeStyle = 'rgba(255,51,51,0.7)'
-    ctx.lineWidth = 2
-    ctx.beginPath()
-    ctx.moveTo(0, redLineY)
-    ctx.lineTo(w, redLineY)
-    ctx.stroke()
-  }
-
-  // Placed blocks
-  for (let y = 0; y < boardRows; y++) {
-    for (let x = 0; x < BOARD_WIDTH; x++) {
-      const block = board[y][x]
-      if (block) {
-        drawBlock(ctx, x, y, PIECES[block - 1].color)
-      }
-    }
-  }
-
-  // Ghost + current piece
+  for (let y = 0; y < boardRows; y++) for (let x = 0; x < BOARD_WIDTH; x++) { const b = board[y][x]; if (b) drawBlock(ctx, x, y, PIECES[b - 1].color) }
   if (gameState.value.currentPiece) {
-    const piece = gameState.value.currentPiece
-
-    let ghostY = 0
-    while (isValidMove(piece, board, 0, ghostY + 1)) {
-      ghostY++
-    }
-    if (ghostY > 0) {
-      for (let py = 0; py < piece.shape.length; py++) {
-        for (let px = 0; px < piece.shape[py].length; px++) {
-          if (piece.shape[py][px]) {
-            drawGhost(ctx, piece.x + px, piece.y + py + ghostY, piece.color)
-          }
-        }
-      }
-    }
-
-    for (let py = 0; py < piece.shape.length; py++) {
-      for (let px = 0; px < piece.shape[py].length; px++) {
-        if (piece.shape[py][px]) {
-          drawBlock(ctx, piece.x + px, piece.y + py, piece.color)
-        }
-      }
-    }
+    const p = gameState.value.currentPiece
+    let gy = 0; while (isValidMove(p, board, 0, gy + 1)) gy++
+    if (gy > 0) for (let py = 0; py < p.shape.length; py++) for (let px = 0; px < p.shape[py].length; px++) if (p.shape[py][px]) drawGhost(ctx, p.x + px, p.y + py + gy, p.color)
+    for (let py = 0; py < p.shape.length; py++) for (let px = 0; px < p.shape[py].length; px++) if (p.shape[py][px]) drawBlock(ctx, p.x + px, p.y + py, p.color)
   }
-
   ctx.restore()
 }
 
-const renderWithFlash = (clearTimer: number) => {
-  const canvas = canvasRef.value
-  if (!canvas) return
-  const ctx = canvas.getContext('2d')
-  if (!ctx) return
-
-  const board = gameState.value.board
-  const boardRows = board.length
-  const isIzakaya = gameState.value.mode === 'izakaya'
-  const w = BOARD_WIDTH * BLOCK_SIZE
-  const h = boardRows * BLOCK_SIZE
-
-  // Shake
-  if (clearTimer < 200) {
-    shakeOffset.x = (Math.random() - 0.5) * 6
-    shakeOffset.y = (Math.random() - 0.5) * 6
-  } else {
-    shakeOffset.x = 0
-    shakeOffset.y = 0
-  }
-
-  ctx.save()
-  ctx.translate(shakeOffset.x, shakeOffset.y)
-
-  ctx.fillStyle = '#0a0a0a'
-  ctx.fillRect(0, 0, w, h)
-
-  // Grid
-  ctx.strokeStyle = 'rgba(34,34,34,0.3)'
-  ctx.lineWidth = 1
-  for (let x = 0; x <= BOARD_WIDTH; x++) {
-    ctx.beginPath(); ctx.moveTo(x * BLOCK_SIZE, 0); ctx.lineTo(x * BLOCK_SIZE, h); ctx.stroke()
-  }
-  for (let y = 0; y <= boardRows; y++) {
-    ctx.beginPath(); ctx.moveTo(0, y * BLOCK_SIZE); ctx.lineTo(w, y * BLOCK_SIZE); ctx.stroke()
-  }
-
-  if (isIzakaya) {
-    const redLineY = (boardRows - 20) * BLOCK_SIZE
-    ctx.strokeStyle = 'rgba(255,51,51,0.7)'
-    ctx.lineWidth = 2
-    ctx.beginPath(); ctx.moveTo(0, redLineY); ctx.lineTo(w, redLineY); ctx.stroke()
-  }
-
-  const clearingSet = new Set(gameState.value.clearingRows)
-  const flashPhase = Math.floor(clearTimer / 60) % 2 === 0
-
-  for (let y = 0; y < boardRows; y++) {
-    for (let x = 0; x < BOARD_WIDTH; x++) {
-      const block = board[y][x]
-      if (block) {
-        if (clearingSet.has(y)) {
-          if (flashPhase) {
-            ctx.fillStyle = 'rgba(255,255,255,0.9)'
-            ctx.fillRect(x * BLOCK_SIZE + 1, y * BLOCK_SIZE + 1, BLOCK_SIZE - 2, BLOCK_SIZE - 2)
-          }
-        } else {
-          drawBlock(ctx, x, y, PIECES[block - 1].color)
-        }
-      }
-    }
-  }
-
+const renderWithFlash = (ct: number) => {
+  const canvas = canvasRef.value; if (!canvas) return
+  const ctx = canvas.getContext('2d'); if (!ctx) return
+  const board = gameState.value.board, boardRows = board.length, isIzk = gameState.value.mode === 'izakaya'
+  const w = BOARD_WIDTH * BLOCK_SIZE, h = boardRows * BLOCK_SIZE
+  if (ct < 200) { shakeOffset.x = (Math.random() - 0.5) * 6; shakeOffset.y = (Math.random() - 0.5) * 6 } else { shakeOffset.x = 0; shakeOffset.y = 0 }
+  ctx.save(); ctx.translate(shakeOffset.x, shakeOffset.y)
+  ctx.fillStyle = '#0a0a0a'; ctx.fillRect(0, 0, w, h)
+  ctx.strokeStyle = 'rgba(34,34,34,0.3)'; ctx.lineWidth = 1
+  for (let x = 0; x <= BOARD_WIDTH; x++) { ctx.beginPath(); ctx.moveTo(x * BLOCK_SIZE, 0); ctx.lineTo(x * BLOCK_SIZE, h); ctx.stroke() }
+  for (let y = 0; y <= boardRows; y++) { ctx.beginPath(); ctx.moveTo(0, y * BLOCK_SIZE); ctx.lineTo(w, y * BLOCK_SIZE); ctx.stroke() }
+  if (isIzk && boardRows >= 20) { const ry = (boardRows - 20) * BLOCK_SIZE; ctx.strokeStyle = 'rgba(255,51,51,0.7)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, ry); ctx.lineTo(w, ry); ctx.stroke() }
+  const cs = new Set(gameState.value.clearingRows), fp = Math.floor(ct / 60) % 2 === 0
+  for (let y = 0; y < boardRows; y++) for (let x = 0; x < BOARD_WIDTH; x++) { const b = board[y][x]; if (b) { if (cs.has(y)) { if (fp) { ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.fillRect(x * BLOCK_SIZE + 1, y * BLOCK_SIZE + 1, BLOCK_SIZE - 2, BLOCK_SIZE - 2) } } else drawBlock(ctx, x, y, PIECES[b - 1].color) } }
   ctx.restore()
 }
 
 // --- Game Loop ---
-let dropTimer = 0
-let clearTimer = 0
-let isClearing = false
-let izakayaDropTimer = 0
-let lastTime = 0
-let animFrameId = 0
+let dropTimer = 0, clearTimer = 0, isClearing = false, izakayaDropTimer = 0, lastTime = 0, animFrameId = 0
 
 const gameLoop = (time: number) => {
-  const delta = lastTime ? time - lastTime : 16
-  lastTime = time
-
-  if (gameState.value.started) {
-    if (gameState.value.mode === 'izakaya') {
-      updateIzakaya(delta)
-    } else {
-      updateClassic(delta)
-    }
-  }
-
+  const delta = lastTime ? time - lastTime : 16; lastTime = time
+  if (gameState.value.started) { if (gameState.value.mode === 'izakaya') updateIzakaya(delta); else updateClassic(delta) }
   animFrameId = requestAnimationFrame(gameLoop)
 }
-
-const updateClassic = (delta: number) => {
+const updateClassic = (d: number) => {
   if (gameState.value.gameOver || gameState.value.paused) return
-
-  if (gameState.value.clearingRows.length > 0) {
-    handleClearAnim(delta, false)
-    return
-  }
-
-  dropTimer += delta
-  const speed = Math.max(100, 1000 - (gameState.value.level - 1) * 100)
-  if (dropTimer > speed) {
-    movePiece('down')
-    dropTimer = 0
-  }
-
-  shakeOffset.x = 0
-  shakeOffset.y = 0
-  renderBoard()
+  if (gameState.value.clearingRows.length > 0) { handleClear(d, false); return }
+  dropTimer += d; const sp = Math.max(100, 1000 - (gameState.value.level - 1) * 100)
+  if (dropTimer > sp) { movePiece('down'); dropTimer = 0 }
+  shakeOffset.x = 0; shakeOffset.y = 0; renderBoard()
 }
-
-const updateIzakaya = (delta: number) => {
-  if (gameState.value.clearingRows.length > 0) {
-    handleClearAnim(delta, true)
-    return
-  }
-
+const updateIzakaya = (d: number) => {
+  if (gameState.value.clearingRows.length > 0) { handleClear(d, true); return }
   if (gameState.value.izakayaPhase === 'dropping') {
-    izakayaDropTimer += delta
-    if (izakayaDropTimer > 1500) {
-      movePiece('down')
-      izakayaDropTimer = 0
-    }
-    if (!gameState.value.currentPiece && gameState.value.clearingRows.length === 0) {
-      izakaya.onIzakayaPiecePlaced()
-    }
+    izakayaDropTimer += d
+    if (izakayaDropTimer > 1500) { movePiece('down'); izakayaDropTimer = 0 }
+    if (!gameState.value.currentPiece && gameState.value.clearingRows.length === 0) izakaya.onIzakayaPiecePlaced()
   }
-
-  shakeOffset.x = 0
-  shakeOffset.y = 0
-  renderBoard()
+  shakeOffset.x = 0; shakeOffset.y = 0; renderBoard()
 }
-
-const handleClearAnim = (delta: number, isIzakayaMode: boolean) => {
-  if (!isClearing) {
-    isClearing = true
-    clearTimer = 0
-  }
-  clearTimer += delta
-  renderWithFlash(clearTimer)
-
-  if (clearTimer >= 400) {
-    isClearing = false
-    shakeOffset.x = 0
-    shakeOffset.y = 0
-    commitClear()
-    dropTimer = 0
-    izakayaDropTimer = 0
-
-    if (isIzakayaMode) {
-      izakaya.onIzakayaClearDone()
-    }
-  }
+const handleClear = (d: number, izk: boolean) => {
+  if (!isClearing) { isClearing = true; clearTimer = 0 }
+  clearTimer += d; renderWithFlash(clearTimer)
+  if (clearTimer >= 400) { isClearing = false; shakeOffset.x = 0; shakeOffset.y = 0; commitClear(); dropTimer = 0; izakayaDropTimer = 0; if (izk) izakaya.onIzakayaClearDone() }
 }
 
 // --- Handlers ---
-const handleMove = (direction: 'left' | 'right' | 'down') => { movePiece(direction) }
+const handleMove = (dir: 'left' | 'right' | 'down') => { movePiece(dir) }
 const handleRotate = () => { rotate() }
 const handleHardDrop = () => {
-  if (gameState.value.mode === 'izakaya') {
-    hardDrop()
-    if (!gameState.value.currentPiece && gameState.value.clearingRows.length === 0) {
-      izakaya.onIzakayaPiecePlaced()
-    }
-  } else {
-    hardDrop()
-  }
+  if (gameState.value.mode === 'izakaya') { hardDrop(); if (!gameState.value.currentPiece && gameState.value.clearingRows.length === 0) izakaya.onIzakayaPiecePlaced() }
+  else hardDrop()
 }
-
 const showMenu = ref(false)
-
+const confirmAction = ref<'restart' | 'quit' | null>(null)
 const handleStartClassic = () => { startGame() }
 const handleStartIzakaya = () => { izakaya.initIzakayaRandom() }
 const handleIzakayaFromClassic = () => { izakaya.initIzakayaFromClassic() }
+const handleResumeSave = () => { izakaya.loadFromStorage() }
+const openMenu = () => { if (gameState.value.mode === 'classic' && !gameState.value.paused) togglePause(); showMenu.value = true }
+const handleResume = () => { showMenu.value = false; confirmAction.value = null; if (gameState.value.paused) togglePause() }
+const handleRestart = () => { showMenu.value = false; confirmAction.value = null; if (gameState.value.mode === 'izakaya') { izakaya.clearStorage(); izakaya.initIzakayaRandom() } else startGame() }
+const handleQuit = () => { showMenu.value = false; confirmAction.value = null; gameState.value.started = false; gameState.value.paused = false; gameState.value.gameOver = false; gameState.value.currentPiece = null; gameState.value.mode = 'classic'; gameState.value.izakayaPhase = 'idle' }
+const executeConfirmAction = () => { if (confirmAction.value === 'restart') handleRestart(); else if (confirmAction.value === 'quit') handleQuit() }
 
-const openMenu = () => {
-  if (!gameState.value.paused) togglePause()
-  showMenu.value = true
-}
-const handleResume = () => {
-  showMenu.value = false
-  if (gameState.value.paused) togglePause()
-}
-const handleRestart = () => {
-  showMenu.value = false
-  if (gameState.value.mode === 'izakaya') {
-    izakaya.initIzakayaRandom()
-  } else {
-    startGame()
-  }
-}
-const handleQuit = () => {
-  showMenu.value = false
-  gameState.value.started = false
-  gameState.value.paused = false
-  gameState.value.gameOver = false
-  gameState.value.currentPiece = null
-  gameState.value.mode = 'classic'
-  gameState.value.izakayaPhase = 'idle'
-}
-
-// Resize canvas when board changes
-watch(() => gameState.value.board.length, () => {
-  nextTick(() => resizeCanvas())
-})
-
-// Countdown logic
+watch(() => gameState.value.board.length, () => { nextTick(() => resizeCanvas()) })
 watch(() => gameState.value.izakayaPhase, (phase) => {
-  if (phase === 'countdown') {
-    countdownValue.value = 3
-    if (countdownInterval) clearInterval(countdownInterval)
-    countdownInterval = setInterval(() => {
-      countdownValue.value--
-      if (countdownValue.value <= 0) {
-        if (countdownInterval) clearInterval(countdownInterval)
-        countdownInterval = null
-        izakaya.startDropping()
-      }
-    }, 1000)
+  // Countdown
+  if (phase === 'countdown') { countdownValue.value = 3; if (countdownInterval) clearInterval(countdownInterval); countdownInterval = setInterval(() => { countdownValue.value--; if (countdownValue.value <= 0) { clearInterval(countdownInterval!); countdownInterval = null; izakaya.startDropping() } }, 1000) }
+  else { if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null } }
+
+  // Rolling animation
+  if (phase === 'rolling') {
+    rollingDone.value = false; rollingTick.value = 0
+    if (rollingInterval) clearInterval(rollingInterval)
+    rollingInterval = setInterval(() => { rollingTick.value++ }, 80)
+    setTimeout(() => {
+      if (rollingInterval) { clearInterval(rollingInterval); rollingInterval = null }
+      rollingDone.value = true
+      izakaya.revealDraw()
+    }, 1500)
   } else {
-    if (countdownInterval) {
-      clearInterval(countdownInterval)
-      countdownInterval = null
-    }
+    if (rollingInterval) { clearInterval(rollingInterval); rollingInterval = null }
   }
 })
 
 onMounted(() => {
+  try { hasSave.value = !!localStorage.getItem('izakaya-tetris-save') } catch {}
   resizeCanvas()
   animFrameId = requestAnimationFrame(gameLoop)
-
-  window.addEventListener('resize', resizeCanvas)
+  if (wrapperRef.value) { resizeObserver = new ResizeObserver(() => resizeCanvas()); resizeObserver.observe(wrapperRef.value) }
 })
-
 onUnmounted(() => {
   cancelAnimationFrame(animFrameId)
-  window.removeEventListener('resize', resizeCanvas)
+  if (resizeObserver) { resizeObserver.disconnect(); resizeObserver = null }
   if (countdownInterval) clearInterval(countdownInterval)
+  if (rollingInterval) clearInterval(rollingInterval)
 })
-
-// Keyboard controls
 onMounted(() => {
-  const handleKeyPress = (e: KeyboardEvent) => {
-    if (gameState.value.mode === 'classic' && gameState.value.gameOver) {
-      if (e.key === 'Enter') startGame()
-      return
-    }
-
-    const canControl = gameState.value.mode === 'classic'
-      ? (gameState.value.started && !gameState.value.gameOver && !gameState.value.paused)
-      : gameState.value.izakayaPhase === 'dropping'
-
-    if (canControl) {
-      switch (e.key) {
-        case 'ArrowLeft': movePiece('left'); break
-        case 'ArrowRight': movePiece('right'); break
-        case 'ArrowDown': movePiece('down'); break
-        case 'ArrowUp': rotate(); break
-        case ' ': handleHardDrop(); break
-      }
-    }
-
-    switch (e.key) {
-      case 'p':
-      case 'P':
-      case 'Escape':
-        if (showMenu.value) {
-          handleResume()
-        } else if (gameState.value.started && !gameState.value.gameOver) {
-          openMenu()
-        }
-        break
-    }
+  const kp = (e: KeyboardEvent) => {
+    if (gameState.value.mode === 'classic' && gameState.value.gameOver) { if (e.key === 'Enter') startGame(); return }
+    const cc = gameState.value.mode === 'classic' ? (gameState.value.started && !gameState.value.gameOver && !gameState.value.paused) : gameState.value.izakayaPhase === 'dropping'
+    if (cc) { switch (e.key) { case 'ArrowLeft': movePiece('left'); break; case 'ArrowRight': movePiece('right'); break; case 'ArrowDown': movePiece('down'); break; case 'ArrowUp': rotate(); break; case ' ': handleHardDrop(); break } }
+    if (e.key === 'z' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); izakaya.undo() }
+    if (e.key === 'y' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); izakaya.redo() }
+    if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') { if (showMenu.value) handleResume(); else if (gameState.value.started && !gameState.value.gameOver) openMenu() }
   }
-
-  window.addEventListener('keydown', handleKeyPress)
-  onUnmounted(() => { window.removeEventListener('keydown', handleKeyPress) })
+  window.addEventListener('keydown', kp)
+  onUnmounted(() => window.removeEventListener('keydown', kp))
 })
 </script>

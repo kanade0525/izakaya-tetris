@@ -11,6 +11,7 @@ export type IzakayaPhase =
   | 'exclusion'
   | 'drawing'
   | 'countdown'
+  | 'rolling'
   | 'dropping'
   | 'placed'
   | 'wildcard'

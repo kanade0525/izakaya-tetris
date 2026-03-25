@@ -1,469 +1,222 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: inherit; }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-  background: #1a1a2e;
-  color: #fff;
-  overflow: hidden;
-  touch-action: none;
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-touch-callout: none;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #1a1a2e; color: #fff;
+  overflow: hidden; touch-action: none;
+  user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
 }
 
 #game-container {
-  width: 100vw;
-  height: 100dvh;
-  display: flex;
-  flex-direction: column;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  width: 100vw; height: 100dvh;
+  display: flex; flex-direction: column;
 }
 
+/* --- Header --- */
 .game-header {
-  background: rgba(0, 0, 0, 0.3);
-  padding: 8px 12px;
-  padding-top: calc(8px + env(safe-area-inset-top, 0px));
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  background: rgba(0,0,0,0.3);
+  padding: 8px 12px; padding-top: calc(8px + env(safe-area-inset-top, 0px));
+  display: flex; justify-content: space-between; align-items: center;
   flex-shrink: 0;
 }
+.score-display { font-size: 14px; font-weight: 600; }
 
-.score-display {
-  display: flex;
-  gap: 8px;
-  font-size: clamp(11px, 2.5vw, 14px);
-  align-items: center;
+/* --- Main area --- */
+.game-main {
+  flex: 1; min-height: 0;
+  display: flex; align-items: stretch;
 }
 
-.stock-btn {
-  width: 28px;
-  height: 28px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
-  color: white;
-  font-size: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  touch-action: none;
+/* --- Izakaya Header --- */
+.izk-header {
+  display: flex; align-items: center; justify-content: space-between; width: 100%;
+}
+.stock-group {
+  display: flex; align-items: center; gap: 6px;
+}
+.stock-label {
+  font-size: 11px; color: rgba(255,255,255,0.5); margin-right: 2px;
+}
+.stock-number {
+  font-size: 20px; font-weight: 700; min-width: 28px; text-align: center;
+}
+.izk-header-actions {
+  display: flex; align-items: center; gap: 6px;
 }
 
-.stock-btn:active {
-  background: rgba(255, 255, 255, 0.3);
+/* --- Icon Button --- */
+.icon-btn {
+  width: 32px; height: 32px;
+  border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.08);
+  border-radius: 6px; color: white;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; touch-action: none; flex-shrink: 0;
 }
+.icon-btn.small { width: 26px; height: 26px; }
+.icon-btn:active { background: rgba(255,255,255,0.2); }
+.icon-btn:disabled { opacity: 0.25; pointer-events: none; }
 
-.pause-btn {
-  width: 36px;
-  height: 36px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  touch-action: none;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.pause-btn:active {
-  background: rgba(255, 255, 255, 0.3);
-}
-
+/* --- Canvas Wrapper --- */
 .game-canvas-wrapper {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: relative;
-  overflow: hidden;
+  flex: 1; min-width: 0; min-height: 0;
+  display: flex; justify-content: center; align-items: center;
+  position: relative; overflow: hidden;
+  padding: 4px;
 }
 
-/* --- Controls --- */
+.game-canvas-wrapper canvas {
+  display: block;
+  max-width: 100%; max-height: 100%;
+  object-fit: contain;
+}
+
+/* --- Bottom Controls --- */
 .controls-container {
   flex-shrink: 0;
-  padding: 12px 16px;
-  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  padding: 10px 16px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  background: rgba(0,0,0,0.5);
+  display: flex; justify-content: space-between; align-items: center;
 }
-
-.control-left {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
+.control-left { display: flex; align-items: center; gap: 6px; }
+.control-right { display: flex; align-items: center; gap: 10px; }
 .move-btn {
-  --size: clamp(48px, 13vw, 62px);
-  width: var(--size);
-  height: var(--size);
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  touch-action: none;
-  cursor: pointer;
-  transition: background 0.1s, transform 0.1s;
+  --s: clamp(44px, 12vw, 58px); width: var(--s); height: var(--s);
+  border: 2px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1);
+  border-radius: 10px; color: white;
+  display: flex; align-items: center; justify-content: center;
+  touch-action: none; cursor: pointer;
 }
-
-.move-btn:active {
-  background: rgba(255, 255, 255, 0.3);
-  transform: scale(0.92);
-}
-
-.control-right {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
+.move-btn:active { background: rgba(255,255,255,0.3); transform: scale(0.93); }
 .action-btn {
-  --size: clamp(48px, 13vw, 62px);
-  width: var(--size);
-  height: var(--size);
-  border-radius: 50%;
-  border: 2px solid;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  touch-action: none;
-  cursor: pointer;
-  transition: background 0.1s, transform 0.1s;
+  --s: clamp(44px, 12vw, 58px); width: var(--s); height: var(--s);
+  border-radius: 50%; border: 2px solid; color: white;
+  display: flex; align-items: center; justify-content: center;
+  touch-action: none; cursor: pointer;
 }
+.action-btn:active { transform: scale(0.93); }
+.rotate-btn { background: rgba(76,175,80,0.25); border-color: rgba(76,175,80,0.5); }
+.rotate-btn:active { background: rgba(76,175,80,0.5); }
+.drop-btn { background: rgba(244,67,54,0.25); border-color: rgba(244,67,54,0.5); }
+.drop-btn:active { background: rgba(244,67,54,0.5); }
 
-.action-btn:active {
-  transform: scale(0.92);
-}
-
-.rotate-btn {
-  background: rgba(76, 175, 80, 0.25);
-  border-color: rgba(76, 175, 80, 0.5);
-}
-
-.rotate-btn:active {
-  background: rgba(76, 175, 80, 0.5);
-}
-
-.drop-btn {
-  background: rgba(244, 67, 54, 0.25);
-  border-color: rgba(244, 67, 54, 0.5);
-}
-
-.drop-btn:active {
-  background: rgba(244, 67, 54, 0.5);
-}
-
-/* --- Title / Game Over Overlay --- */
+/* --- Overlays --- */
 .title-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.75);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  z-index: 10;
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.78);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 16px; z-index: 10;
 }
-
 .title-text {
-  font-size: clamp(32px, 9vw, 52px);
-  font-weight: 900;
-  text-align: center;
-  line-height: 1.2;
-  letter-spacing: 4px;
+  font-size: clamp(28px, 8vw, 48px); font-weight: 900;
+  text-align: center; line-height: 1.2; letter-spacing: 4px;
   background: linear-gradient(180deg, #f0a000, #f44336);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
+.gameover-text { font-size: clamp(24px, 7vw, 40px); font-weight: 900; letter-spacing: 4px; color: #f44336; }
+.start-text { font-size: 13px; color: rgba(255,255,255,0.4); letter-spacing: 2px; animation: pulse 1.5s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { opacity: 0.4; } 50% { opacity: 1; } }
 
-.gameover-text {
-  font-size: clamp(28px, 8vw, 44px);
-  font-weight: 900;
-  letter-spacing: 4px;
-  color: #f44336;
-}
-
-.gameover-score {
-  font-size: clamp(16px, 4vw, 24px);
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.start-text {
-  font-size: clamp(14px, 3.5vw, 18px);
-  color: rgba(255, 255, 255, 0.6);
-  letter-spacing: 2px;
-  animation: pulse 1.5s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 1; }
-}
-
-/* --- Mode Selection Buttons --- */
-.mode-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 8px;
-}
-
+.mode-buttons { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
 .mode-btn {
-  padding: 14px 32px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  color: white;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  text-align: center;
-  transition: background 0.15s;
+  padding: 12px 28px; border: 2px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.1);
+  border-radius: 10px; color: white; font-size: 15px; font-weight: 600;
+  cursor: pointer; text-align: center;
 }
+.mode-btn:active { background: rgba(255,255,255,0.25); }
+.mode-btn-izakaya { background: rgba(240,160,0,0.2); border-color: rgba(240,160,0,0.5); }
+.mode-btn-izakaya:active { background: rgba(240,160,0,0.4); }
+.mode-btn-resume { background: rgba(76,175,80,0.2); border-color: rgba(76,175,80,0.5); }
+.mode-btn-resume:active { background: rgba(76,175,80,0.4); }
 
-.mode-btn:active {
-  background: rgba(255, 255, 255, 0.25);
-}
-
-.mode-btn-izakaya {
-  background: rgba(240, 160, 0, 0.2);
-  border-color: rgba(240, 160, 0, 0.5);
-}
-
-.mode-btn-izakaya:active {
-  background: rgba(240, 160, 0, 0.4);
-}
-
-/* --- Pause Menu --- */
 .menu-box {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 28px 24px;
-  background: rgba(20, 20, 40, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 16px;
-  min-width: 220px;
-  max-width: 90vw;
+  display: flex; flex-direction: column; gap: 10px; padding: 20px 18px;
+  background: rgba(20,20,40,0.95); border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 14px; min-width: 180px; max-width: 85vw;
 }
-
-.menu-title {
-  font-size: 20px;
-  font-weight: 700;
-  text-align: center;
-  margin-bottom: 4px;
-}
-
+.menu-title { font-size: 16px; font-weight: 700; text-align: center; }
 .menu-item {
-  padding: 12px 20px;
-  border: none;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-  font-size: 16px;
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.15s;
+  padding: 10px 16px; border: none; border-radius: 8px;
+  background: rgba(255,255,255,0.1); color: white; font-size: 14px;
+  text-align: left; cursor: pointer;
 }
+.menu-item:active { background: rgba(255,255,255,0.25); }
+.menu-item-quit { color: rgba(244,67,54,0.9); }
+.confirm-text { font-size: 12px; color: rgba(255,255,255,0.6); text-align: center; line-height: 1.5; }
 
-.menu-item:active {
-  background: rgba(255, 255, 255, 0.25);
-}
-
-.menu-item-quit {
-  color: rgba(244, 67, 54, 0.9);
-}
-
-/* --- Izakaya: Confirm Dialog --- */
-.confirm-text {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.7);
-  text-align: center;
-  line-height: 1.5;
-}
-
-/* --- Izakaya: Exclusion --- */
-.exclusion-box {
-  max-height: 80vh;
-  overflow-y: auto;
-}
-
-.exclusion-desc {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
-  text-align: center;
-}
-
-.exclusion-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-}
-
+.exclusion-box { max-height: 75vh; overflow-y: auto; }
+.exclusion-desc { font-size: 10px; color: rgba(255,255,255,0.4); text-align: center; }
+.exclusion-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .exclusion-item {
-  padding: 12px 8px;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 10px;
-  color: white;
-  font-size: 18px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.15s;
+  padding: 8px; border: 2px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04);
+  border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; min-height: 40px;
 }
+.exclusion-item.selected { border-color: rgba(244,67,54,0.5); background: rgba(244,67,54,0.12); }
+.exclusion-item:active { transform: scale(0.95); }
+.exclusion-cost { font-size: 11px; color: rgba(240,160,0,0.7); text-align: center; }
+.draw-label { font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.5); }
 
-.exclusion-item.selected {
-  border-color: rgba(244, 67, 54, 0.7);
-  background: rgba(244, 67, 54, 0.2);
-}
+.drawing-result { display: flex; flex-direction: column; align-items: center; gap: 14px; cursor: pointer; }
+.drawn-text { font-size: clamp(32px, 10vw, 52px); font-weight: 900; letter-spacing: 4px; }
+.drawn-text.miss { color: #555; }
+.drawn-label { font-size: clamp(14px, 4vw, 20px); font-weight: 600; color: rgba(255,255,255,0.7); }
 
-.exclusion-item:active {
-  transform: scale(0.95);
-}
-
-.exclusion-cost {
-  font-size: 13px;
-  color: rgba(240, 160, 0, 0.9);
-  text-align: center;
-}
-
-/* --- Izakaya: Drawing Result --- */
-.drawing-result {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-}
-
-.drawn-piece-name {
-  font-size: clamp(48px, 15vw, 72px);
-  font-weight: 900;
-}
-
-.drawn-label {
-  font-size: clamp(18px, 5vw, 28px);
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.9);
-}
-
-/* --- Izakaya: Wildcard Grid --- */
-.wildcard-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-}
-
+.wildcard-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
 .wildcard-item {
-  padding: 14px 8px;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 10px;
-  color: white;
-  font-size: 20px;
-  font-weight: 700;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.15s;
+  padding: 10px 6px; border: 2px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04);
+  border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; min-height: 44px;
+}
+.wildcard-item:active { background: rgba(76,175,80,0.25); transform: scale(0.95); }
+
+.countdown-overlay { background: rgba(0,0,0,0.5); pointer-events: none; }
+.countdown-number { font-size: clamp(56px, 18vw, 100px); font-weight: 900; color: white; text-shadow: 0 0 30px rgba(240,160,0,0.5); }
+.miss-text { font-size: clamp(28px, 8vw, 48px); font-weight: 900; color: #555; letter-spacing: 4px; }
+
+/* --- Rolling Animation --- */
+.rolling-container {
+  display: flex; flex-direction: column; align-items: center; gap: 20px;
+}
+.rolling-slot {
+  width: 80px; height: 60px;
+  border: 2px solid rgba(240,160,0,0.4); border-radius: 12px;
+  background: rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.rolling-items {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  animation: slotSpin 0.3s linear infinite;
+}
+.rolling-items.stopped { animation: none; }
+.rolling-label {
+  font-size: 16px; font-weight: 600; color: rgba(255,255,255,0.6);
+  animation: pulse 0.8s ease-in-out infinite;
+}
+.rolling-result-text { font-size: 28px; font-weight: 900; color: rgba(255,255,255,0.7); }
+.rolling-result-text.dim { color: #555; }
+.drawn-sub { font-size: 12px; color: rgba(255,255,255,0.5); }
+
+@keyframes slotSpin {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-40px); }
 }
 
-.wildcard-item:active {
-  background: rgba(76, 175, 80, 0.3);
-  transform: scale(0.95);
+/* --- Izakaya bottom bar --- */
+.izk-bottom { justify-content: center; }
+.izk-drop-btn {
+  padding: 12px 32px;
+  border: 1px solid rgba(240,160,0,0.5); background: rgba(240,160,0,0.15);
+  border-radius: 10px; color: white; font-size: 15px; font-weight: 600;
+  cursor: pointer; letter-spacing: 1px;
 }
-
-.piece-label {
-  font-weight: 900;
-  font-size: 20px;
-}
-
-/* --- Izakaya: Countdown --- */
-.countdown-overlay {
-  background: rgba(0, 0, 0, 0.5);
-  pointer-events: none;
-}
-
-.countdown-number {
-  font-size: clamp(64px, 20vw, 120px);
-  font-weight: 900;
-  color: white;
-  text-shadow: 0 0 30px rgba(240, 160, 0, 0.6);
-}
-
-/* --- Izakaya: Miss --- */
-.miss-text {
-  font-size: clamp(36px, 12vw, 64px);
-  font-weight: 900;
-  color: #888;
-  letter-spacing: 8px;
-}
-
-/* --- Izakaya: Won --- */
+.izk-drop-btn:active { background: rgba(240,160,0,0.35); }
+.izk-drop-btn:disabled { opacity: 0.3; pointer-events: none; }
 .won-text {
-  font-size: clamp(28px, 8vw, 48px);
-  font-weight: 900;
+  font-size: clamp(24px, 7vw, 44px); font-weight: 900;
   background: linear-gradient(180deg, #f0a000, #00f0f0);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
 
-.won-emoji {
-  font-size: clamp(32px, 10vw, 56px);
-}
-
-/* --- Izakaya: Drop Button --- */
-.izakaya-controls {
-  justify-content: center;
-}
-
-.izakaya-drop-btn {
-  padding: 10px 24px;
-  border: 2px solid rgba(240, 160, 0, 0.5);
-  background: rgba(240, 160, 0, 0.2);
-  border-radius: 12px;
-  color: white;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.izakaya-drop-btn:active {
-  background: rgba(240, 160, 0, 0.4);
-  transform: scale(0.96);
-}
-
-.izakaya-drop-btn:disabled {
-  opacity: 0.4;
-  pointer-events: none;
-}
-
-.izakaya-phase-spacer {
-  display: block;
-  height: 38px;
-}
-
-@media (min-width: 768px) {
-  .controls-container {
-    max-width: 500px;
-    margin: 0 auto;
-  }
-}
+@media (min-width: 768px) { .controls-container { max-width: 500px; margin: 0 auto; } }
