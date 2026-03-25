@@ -371,7 +371,12 @@ const handleResumeSave = () => { izakaya.loadFromStorage() }
 const openMenu = () => { if (gameState.value.mode === 'classic' && !gameState.value.paused) togglePause(); showMenu.value = true }
 const handleResume = () => { showMenu.value = false; confirmAction.value = null; if (gameState.value.paused) togglePause() }
 const handleRestart = () => { showMenu.value = false; confirmAction.value = null; if (gameState.value.mode === 'izakaya') { izakaya.clearStorage(); izakaya.initIzakayaRandom() } else startGame() }
-const handleQuit = () => { showMenu.value = false; confirmAction.value = null; gameState.value.started = false; gameState.value.paused = false; gameState.value.gameOver = false; gameState.value.currentPiece = null; gameState.value.mode = 'classic'; gameState.value.izakayaPhase = 'idle' }
+const handleQuit = () => {
+  showMenu.value = false; confirmAction.value = null
+  gameState.value.started = false; gameState.value.paused = false; gameState.value.gameOver = false
+  gameState.value.currentPiece = null; gameState.value.mode = 'classic'; gameState.value.izakayaPhase = 'idle'
+  try { hasSave.value = !!localStorage.getItem('izakaya-tetris-save') } catch {}
+}
 const executeConfirmAction = () => { if (confirmAction.value === 'restart') handleRestart(); else if (confirmAction.value === 'quit') handleQuit() }
 
 watch(() => gameState.value.board.length, () => { nextTick(() => resizeCanvas()) })
