@@ -161,9 +161,13 @@
           <div class="countdown-number">{{ countdownValue }}</div>
         </div>
 
-        <div v-else-if="gameState.izakayaPhase === 'won'" class="title-overlay">
-          <div class="won-text">全消し達成!</div>
-          <button class="mode-btn" @click="handleQuit">タイトルへ</button>
+        <div v-else-if="gameState.izakayaPhase === 'won'" class="title-overlay won-overlay">
+          <div class="won-flash"></div>
+          <div class="won-content">
+            <div class="won-text">クリア!</div>
+            <div class="won-sub">最終段を消しました</div>
+            <button class="mode-btn" @click="handleQuit">タイトルへ</button>
+          </div>
         </div>
       </div>
     </div>

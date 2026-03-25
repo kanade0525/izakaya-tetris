@@ -280,9 +280,11 @@ export const useIzakayaMode = () => {
     }
   }
 
-  // --- Win Condition ---
+  // --- Win Condition: last row (bottom) is empty ---
   const checkWin = (): boolean => {
-    return gameState.value.board.every(row => row.every(cell => cell === 0))
+    const board = gameState.value.board
+    if (board.length === 0) return false
+    return board[board.length - 1].every(cell => cell === 0)
   }
 
   // --- Board Expansion ---
