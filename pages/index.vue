@@ -377,7 +377,7 @@ const handleQuit = () => {
   gameState.value.currentPiece = null; gameState.value.mode = 'classic'; gameState.value.izakayaPhase = 'idle'
   try { hasSave.value = !!localStorage.getItem('izakaya-tetris-save') } catch {}
 }
-const executeConfirmAction = () => { if (confirmAction.value === 'restart') handleRestart(); else if (confirmAction.value === 'quit') handleQuit() }
+
 
 watch(() => gameState.value.board.length, () => { nextTick(() => resizeCanvas()) })
 watch(() => gameState.value.izakayaPhase, (phase) => {
@@ -407,11 +407,17 @@ const beforeUnload = (e: BeforeUnloadEvent) => {
   }
 }
 
-// Prevent pinch zoom and double-tap zoom
+// Prevent all zoom (pinch, double-tap, gesture)
 const preventZoom = (e: TouchEvent) => {
   if (e.touches.length > 1) e.preventDefault()
 }
 const preventGestureZoom = (e: Event) => { e.preventDefault() }
+let lastTouchEnd = 0
+const preventDoubleTapZoom = (e: TouchEvent) => {
+  const now = Date.now()
+  if (now - lastTouchEnd < 300) e.preventDefault()
+  lastTouchEnd = now
+}
 
 onMounted(() => {
   try { hasSave.value = !!localStorage.getItem('izakaya-tetris-save') } catch {}
@@ -420,6 +426,7 @@ onMounted(() => {
   if (wrapperRef.value) { resizeObserver = new ResizeObserver(() => resizeCanvas()); resizeObserver.observe(wrapperRef.value) }
   window.addEventListener('beforeunload', beforeUnload)
   document.addEventListener('touchstart', preventZoom, { passive: false })
+  document.addEventListener('touchend', preventDoubleTapZoom, { passive: false })
   document.addEventListener('gesturestart', preventGestureZoom)
   document.addEventListener('gesturechange', preventGestureZoom)
 })
@@ -430,6 +437,7 @@ onUnmounted(() => {
   if (rollingInterval) clearInterval(rollingInterval)
   window.removeEventListener('beforeunload', beforeUnload)
   document.removeEventListener('touchstart', preventZoom)
+  document.removeEventListener('touchend', preventDoubleTapZoom)
   document.removeEventListener('gesturestart', preventGestureZoom)
   document.removeEventListener('gesturechange', preventGestureZoom)
 })
