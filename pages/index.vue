@@ -207,9 +207,8 @@
     <!-- Bottom: Izakaya idle/placed -->
     <div class="controls-container izk-bottom" v-else-if="gameState.mode === 'izakaya' && gameState.started && (gameState.izakayaPhase === 'idle' || gameState.izakayaPhase === 'placed')">
       <button class="izk-drop-btn" :class="{ disabled: !izakaya.canDrop() }" @click="handleDropButton">
-        ブロックを落とす
+        {{ showStockHint ? 'まずは何か注文しよう' : 'ブロックを落とす' }}
       </button>
-      <div v-if="showStockHint" class="stock-hint">ストックを貯めてから押してね（+ボタンで追加）</div>
     </div>
 
     <!-- Help (full screen overlay, outside game-main for proper scrolling) -->
