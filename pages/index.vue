@@ -12,7 +12,7 @@
       <!-- Izakaya header -->
       <template v-else>
         <div class="izk-header">
-          <div class="stock-group">
+          <div class="stock-group" :class="{ 'stock-highlight': showStockHint }">
             <span class="stock-label">ストック</span>
             <button class="icon-btn small" @click="izakaya.removeStock(1)">
               <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19 13H5v-2h14v2z"/></svg>
@@ -178,6 +178,11 @@
             <button class="mode-btn" @click="handleQuit">タイトルへ</button>
           </div>
         </div>
+
+        <!-- Toast -->
+        <div v-if="showStockHint" class="toast" @click="showStockHint = false">
+          ストックが足りません。<br>何か注文したら、上の「+」ボタンでストックを追加してください。
+        </div>
       </div>
     </div>
 
@@ -207,7 +212,7 @@
     <!-- Bottom: Izakaya idle/placed -->
     <div class="controls-container izk-bottom" v-else-if="gameState.mode === 'izakaya' && gameState.started && (gameState.izakayaPhase === 'idle' || gameState.izakayaPhase === 'placed')">
       <button class="izk-drop-btn" :class="{ disabled: !izakaya.canDrop() }" @click="handleDropButton">
-        {{ showStockHint ? 'まずは何か注文しよう' : 'ブロックを落とす' }}
+        ブロックを落とす
       </button>
     </div>
 
