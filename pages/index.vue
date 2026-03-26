@@ -206,9 +206,10 @@
 
     <!-- Bottom: Izakaya idle/placed -->
     <div class="controls-container izk-bottom" v-else-if="gameState.mode === 'izakaya' && gameState.started && (gameState.izakayaPhase === 'idle' || gameState.izakayaPhase === 'placed')">
-      <button class="izk-drop-btn" :disabled="!izakaya.canDrop()" @click="izakaya.requestDrop()">
+      <button class="izk-drop-btn" :class="{ disabled: !izakaya.canDrop() }" @click="handleDropButton">
         ブロックを落とす
       </button>
+      <div v-if="showStockHint" class="stock-hint">ストックを貯めてから押してね（+ボタンで追加）</div>
     </div>
 
     <!-- Help (full screen overlay, outside game-main for proper scrolling) -->
@@ -453,6 +454,19 @@ const handleHardDrop = () => {
 }
 const showMenu = ref(false)
 const showHelp = ref(false)
+const showStockHint = ref(false)
+let stockHintTimer: ReturnType<typeof setTimeout> | null = null
+
+const handleDropButton = () => {
+  if (izakaya.canDrop()) {
+    showStockHint.value = false
+    izakaya.requestDrop()
+  } else {
+    showStockHint.value = true
+    if (stockHintTimer) clearTimeout(stockHintTimer)
+    stockHintTimer = setTimeout(() => { showStockHint.value = false }, 3000)
+  }
+}
 const confirmAction = ref<'restart' | 'quit' | null>(null)
 const handleStartClassic = () => { startGame() }
 const handleStartIzakaya = () => { izakaya.initIzakayaRandom() }

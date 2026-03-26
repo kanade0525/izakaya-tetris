@@ -226,7 +226,18 @@ body {
   cursor: pointer; letter-spacing: 1px;
 }
 .izk-drop-btn:active { background: rgba(240,160,0,0.35); }
-.izk-drop-btn:disabled { opacity: 0.3; pointer-events: none; }
+.izk-drop-btn.disabled { opacity: 0.4; }
+
+.stock-hint {
+  font-size: 12px; color: rgba(240,160,0,0.9); text-align: center;
+  animation: hintFade 3s ease forwards;
+}
+@keyframes hintFade {
+  0% { opacity: 0; transform: translateY(4px); }
+  15% { opacity: 1; transform: translateY(0); }
+  85% { opacity: 1; }
+  100% { opacity: 0; }
+}
 /* --- Win/Clear --- */
 .won-overlay { background: rgba(0,0,0,0); animation: wonBgFade 1s ease forwards; }
 @keyframes wonBgFade { to { background: rgba(0,0,0,0.8); } }
