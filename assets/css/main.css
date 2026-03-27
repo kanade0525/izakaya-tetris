@@ -328,4 +328,12 @@ body {
 .help-dl-row dd { color: rgba(255,255,255,0.5); }
 .mode-btn-help { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.15); font-size: 14px; }
 
+.feature-request { text-align: center; margin-top: 18px; }
+.feature-request-link {
+  color: rgba(255,255,255,0.6); font-size: 13px; text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.feature-request-link:active { color: rgba(255,255,255,0.9); }
+.feature-request-note { display: block; color: rgba(255,255,255,0.35); font-size: 11px; margin-top: 4px; }
+
 @media (min-width: 768px) { .controls-container { max-width: 500px; margin: 0 auto; } }

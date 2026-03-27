@@ -55,6 +55,10 @@
             <button v-if="hasSave" class="mode-btn mode-btn-resume" @click="handleResumeSave" @touchstart.prevent="handleResumeSave">続きから</button>
             <button class="mode-btn mode-btn-help" @click="showHelp = true">遊び方</button>
           </div>
+          <div class="feature-request">
+            <a href="https://docs.google.com/forms/d/e/1FAIpQLSf1OmgWW495fapwlnOd2zJ4QjQOHmuu0PSCRutau40yQX1KIg/viewform?usp=publish-editor" target="_blank" rel="noopener" class="feature-request-link">開発者に新機能を依頼する</a>
+            <span class="feature-request-note">1〜2日で対応します</span>
+          </div>
         </div>
 
         <div v-else-if="gameState.mode === 'classic' && gameState.gameOver" class="title-overlay">
